@@ -12,11 +12,11 @@ ifeq ($(UNAME), Darwin)
   SHELLCMD := sh
 endif
 
-prepare-dev:
+dev:
 	$(SHELLCMD) scripts/prepare.sh development
 
-prepare-test:
+test:
 	$(SHELLCMD) scripts/prepare.sh testnet
 
-prepare-live:
+live:
 	$(SHELLCMD) scripts/prepare.sh live

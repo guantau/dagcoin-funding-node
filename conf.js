@@ -9,14 +9,20 @@ exports.bLight = true;
 
 exports.storage = 'sqlite';
 
-
-//exports.hub = 'byteball.org/bb-test';
-exports.hub = 'www.wiiking.ee/wss';
-exports.deviceName = 'Headless';
+//exports.deviceName = 'SOME FANCY NAME NOT TO USE THE DEFAULT Dagcoin-Funding_Node'
+exports.hub = 'byteball.org/bb-test';
 exports.permanent_pairing_secret = 'randomstring';
 exports.control_addresses = ['DEVICE ALLOWED TO CHAT'];
 exports.payout_address = 'WHERE THE MONEY CAN BE SENT TO';
 exports.KEYS_FILENAME = 'keys.json';
+
+// DISCOVERY SERVICE PAIRING CODE
+// Testnet on PowerEdge
+// exports.discoveryServicePairingCode = 'ApwhbsSyD7cF22UWxlZyH53y1vLpjsPk5gu4AW7AIdq0@byteball.org/bb-test#0000';
+// Yary's public testnet server
+exports.discoveryServicePairingCode = 'AhHZrVJAABB2fVTbO2CNZjvXjUi0QwaazL1uy5OMbn5O@byteball.org/bb-test#0000';
+// Local to Yary's machine
+// exports.discoveryServicePairingCode = 'A8EImXA5RtFDBstX3u1CzcVmcKm8jmBBYlMm93FAHQ0z@byteball.org/bb-test#0000';
 
 // where logs are written to (absolute path).  Default is log.txt in app data directory
 //exports.LOG_FILENAME = '/dev/null';

@@ -15,7 +15,7 @@ var appDataDir = desktopApp.getAppDataDir();
 var KEYS_FILENAME = appDataDir + '/' + (conf.KEYS_FILENAME || 'keys.json');
 var wallet_id;
 
-let discoveryService = null;
+let fundingExchangeProvider = null;
 
 function replaceConsoleLog(){
 	/* var log_filename = conf.LOG_FILENAME || (appDataDir + '/log.txt');
@@ -269,18 +269,23 @@ setTimeout(function(){
 				let my_device_pubkey = device.getMyDevicePubKey();
 				console.log("====== my device address: "+my_device_address);
 				console.log("====== my device pubkey: "+my_device_pubkey);
-				if (conf.permanent_pairing_secret)
-					console.log("====== my pairing code: "+my_device_pubkey+"@"+conf.hub+"#"+conf.permanent_pairing_secret);
+
+				let pairingString = null;
+
+				if (conf.permanent_pairing_secret) {
+                    pairingString = `${my_device_pubkey}@${conf.hub}#${conf.permanent_pairing_secret}`;
+                    console.log(`====== my pairing code: ${pairingString}`);
+                }
+
 				if (conf.bLight){
 					var light_wallet = require('byteballcore/light_wallet.js');
 					light_wallet.setLightVendorHost(conf.hub);
 				}
 				eventBus.emit('headless_wallet_ready');
 				setTimeout(replaceConsoleLog, 1000);
-				const DiscoveryService = require('./submodules/discoveryService');
-				discoveryService = new DiscoveryService(conf.discoveryServicePairingCode);
 
-				discoveryService.makeSureDiscoveryServiceIsConnected();
+				const FundingExchangeProvider = require('./submodules/fundingExchangeProviderService');
+				fundingExchangeProvider = new FundingExchangeProvider(pairingString);
 			});
 		});
 	});

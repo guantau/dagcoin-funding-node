@@ -1,15 +1,13 @@
-// My module
-function DiscoveryService(discoveryServicePairingCode) {
+function DiscoveryService() {
     const FileSystem = require('./fileSystem');
 
-    this.discoveryServicePairingCode = discoveryServicePairingCode;
+    this.conf = require('byteballcore/conf.js');
+    this.discoveryServicePairingCode = this.conf.discoveryServicePairingCode;
     this.eventBus = require('byteballcore/event_bus.js');
     this.device = require('byteballcore/device.js');
-    this.objectHash = require('byteballcore/object_hash.js');
     this.db = require('byteballcore/db.js');
     this.discoveryServiceAddresses = [];
     this.discoveryServiceAvailabilityCheckingPromise = null;
-    this.waitingForFundingAddress = false;
     this.fs = new FileSystem();
 }
 
@@ -22,27 +20,19 @@ DiscoveryService.prototype.messages = {
     updateSettings: 'UPDATE_SETTINGS'
 };
 
-DiscoveryService.prototype.setIsWaitingForFundingAddress = function (value) {
-    this.waitingForFundingAddress = value;
-}
-
-DiscoveryService.prototype.isWaitingForFundingAddress = function () {
-    return this.waitingForFundingAddress;
-}
-
-DiscoveryService.prototype.isDiscoveryServiceAddress = function (deviceAddress) {
-    return !!this.discoveryServiceAddresses.find(obj => obj === deviceAddress);
-}
-
 /**
  * Ensures the discovery service is connected and responsive.
  */
 DiscoveryService.prototype.makeSureDiscoveryServiceIsConnected = function () {
+    const self = this;
+
     return this.checkOrPairDevice(this.discoveryServicePairingCode)
         .then((correspondent) => {
             console.log(`RECEIVED A CORRESPONDENT: ${JSON.stringify(correspondent)}`);
 
             const discoveryServiceDeviceAddress = correspondent.device_address;
+
+            self.discoveryServiceDeviceAddress = discoveryServiceDeviceAddress;
 
             if (this.discoveryServiceAddresses.indexOf(discoveryServiceDeviceAddress) < 0) {
                 console.log(`PUSHING THE DISCOVERY SERVICE ADDRESS (${this.discoveryServiceAddresses}) INTO THE INTERNAL DATA STRUCTURE`);
@@ -60,7 +50,7 @@ DiscoveryService.prototype.makeSureDiscoveryServiceIsConnected = function () {
                 const listener = function (message, fromAddress) {
                     if (fromAddress === discoveryServiceDeviceAddress) {
                         console.log(`THE DISCOVERY SERVICE (${discoveryServiceDeviceAddress}) IS ALIVE`);
-                        this.eventBus.removeListener('dagcoin.connected', listener);
+                        self.eventBus.removeListener('dagcoin.connected', listener);
                         resolve(correspondent);
                     }
                 };
@@ -93,7 +83,7 @@ DiscoveryService.prototype.makeSureDiscoveryServiceIsConnected = function () {
 
             return this.discoveryServiceAvailabilityCheckingPromise;
         });
-}
+};
 
 DiscoveryService.prototype.lookupDeviceByPublicKey = function (pubkey) {
     return new Promise((resolve) => {
@@ -108,7 +98,7 @@ DiscoveryService.prototype.lookupDeviceByPublicKey = function (pubkey) {
             }
         });
     });
-}
+};
 
 DiscoveryService.prototype.pairDevice = function (pubkey, hub, pairingSecret) {
     return new Promise((resolve) => {
@@ -135,7 +125,8 @@ DiscoveryService.prototype.pairDevice = function (pubkey, hub, pairingSecret) {
                 hub,
                 pubkey,
                 pairingSecret,
-                params.reversePairingInfo.pairing_secret, {
+                params.reversePairingInfo.pairing_secret,
+                {
                     ifOk: () => {
                         resolve(params.deviceAddress);
                     },
@@ -149,7 +140,7 @@ DiscoveryService.prototype.pairDevice = function (pubkey, hub, pairingSecret) {
         console.log(`LOOKING UP CORRESPONDENT WITH DEVICE ADDRESS ${deviceAddress}`);
         return this.getCorrespondent(deviceAddress);
     });
-}
+};
 
 DiscoveryService.prototype.getCorrespondent = function (deviceAddress) {
     console.log(`GETTING CORRESPONDENT FROM DB WITH DEVICE ADDRESS ${deviceAddress}`);
@@ -158,7 +149,7 @@ DiscoveryService.prototype.getCorrespondent = function (deviceAddress) {
             resolve(cor);
         });
     });
-}
+};
 
 DiscoveryService.prototype.checkOrPairDevice = function(pairCode) {
     const matches = pairCode.match(/^([\w\/+]+)@([\w.:\/-]+)#([\w\/+-]+)$/);
@@ -173,6 +164,65 @@ DiscoveryService.prototype.checkOrPairDevice = function(pairCode) {
 
         return this.getCorrespondent(deviceAddress);
     });
-}
+};
+
+DiscoveryService.prototype.sendMessage = function (message) {
+    console.log(`SENDING A ${message.messageType} MESSAGE TO THE DISCOVERY SERVICE`);
+
+    const self = this;
+
+    return this.makeSureDiscoveryServiceIsConnected().then(() => {
+        return new Promise((resolve, reject) => {
+            this.device.sendMessageToDevice(
+                self.discoveryServiceDeviceAddress,
+                'text',
+                JSON.stringify(message),
+                {
+                    onSaved: function () {
+                        console.log(`A ${message.messageType} MESSAGE WAS SAVED INTO THE DATABASE`);
+                    },
+                    ifOk: function () {
+                        resolve();
+                    },
+                    ifError: function (err) {
+                        reject(`COULD NOT DELIVER A ${message.messageType} MESSAGE. REASON: ${err}`)
+                    }
+                }
+            );
+        });
+    });
+};
+
+DiscoveryService.prototype.startingTheBusiness = function (pairCode) {
+    const message = {
+        protocol: 'dagcoin',
+        title: `request.${this.messages.startingTheBusiness}`,
+        messageType: this.messages.startingTheBusiness
+    };
+
+    if (pairCode) {
+        message.messageBody = {
+            pairCode
+        }
+    }
+
+    return this.makeSureDiscoveryServiceIsConnected().then(this.sendMessage(message));
+};
+
+DiscoveryService.prototype.aliveAndWell = function (pairCode) {
+    const message = {
+        protocol: 'dagcoin',
+        title: `request.${this.messages.aliveAndWell}`,
+        messageType: this.messages.aliveAndWell
+    };
+
+    if (pairCode) {
+        message.messageBody = {
+            pairCode
+        }
+    }
+
+    return this.makeSureDiscoveryServiceIsConnected().then(this.sendMessage(message));
+};
 
 module.exports = DiscoveryService;

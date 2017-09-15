@@ -31,4 +31,9 @@ exports.discoveryServicePairingCode = 'AhHZrVJAABB2fVTbO2CNZjvXjUi0QwaazL1uy5OMb
 exports.rpcInterface = '127.0.0.1';
 exports.rpcPort = '6332';
 
+exports.exchangeFee = 0.001;
+exports.totalBytes =  100000;
+exports.bytesPerAddress = 10000;
+exports.maxEndUserCapacity = 10;
+
 console.log('finished headless conf');

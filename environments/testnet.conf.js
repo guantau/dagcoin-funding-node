@@ -11,7 +11,7 @@ exports.storage = 'sqlite';
 
 //exports.deviceName = 'SOME FANCY NAME NOT TO USE THE DEFAULT Dagcoin-Funding_Node'
 exports.hub = 'byteball.org/bb-test';
-exports.permanent_pairing_secret = 'randomstring';
+exports.permanent_pairing_secret = '1G5kGcBcsfkH';
 exports.control_addresses = ['DEVICE ALLOWED TO CHAT'];
 exports.payout_address = 'WHERE THE MONEY CAN BE SENT TO';
 exports.KEYS_FILENAME = 'keys.json';
@@ -30,5 +30,10 @@ exports.discoveryServicePairingCode = 'ApwhbsSyD7cF22UWxlZyH53y1vLpjsPk5gu4AW7AI
 // this is for runnining RPC service only, see play/rpc_service.js
 exports.rpcInterface = '127.0.0.1';
 exports.rpcPort = '6332';
+
+exports.exchangeFee = 0.001;
+exports.totalBytes =  100000;
+exports.bytesPerAddress = 10000;
+exports.maxEndUserCapacity = 10;
 
 console.log('finished headless conf');

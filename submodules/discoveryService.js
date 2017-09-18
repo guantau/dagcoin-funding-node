@@ -1,3 +1,4 @@
+'use strict';
 function DiscoveryService() {
     const FileSystem = require('./fileSystem');
 
@@ -42,7 +43,7 @@ DiscoveryService.prototype.makeSureDiscoveryServiceIsConnected = function () {
             console.log(`THE DISCOVERY SERVICE ADDRESS ARRAY ALREADY CONTAINS: ${discoveryServiceDeviceAddress}`);
 
             if (this.discoveryServiceAvailabilityCheckingPromise !== null) {
-                console.log('ALREADY WAITING FOR THE DISCOVERY SERVICE TO REPLY');
+                console.log('ALREADY QUERIED THE DISCOVERY SERVICE. RETURNING THE WAITING PROMISE ...');
                 return this.discoveryServiceAvailabilityCheckingPromise;
             }
 
@@ -166,10 +167,50 @@ DiscoveryService.prototype.checkOrPairDevice = function(pairCode) {
     });
 };
 
+DiscoveryService.prototype.listenToMessage = function (messageType, messageId) {
+    const self = this;
+
+    const promise = new Promise((resolve) => {
+        self.eventBus.once(`received.${messageId}`, resolve);
+    });
+
+    const listener = function (message) {
+        if (message.id !== messageId) {
+            console.log(`WAS WAITING FOR ${messageId}, HEARD OF ${message.id}`);
+            return;
+        }
+
+        self.eventBus.emit(`received.${messageId}`, message);
+    };
+
+    self.eventBus.on(`dagcoin.response.${messageType}`, listener);
+
+    const TimeOutInSeconds = 120;
+
+    return require('./timedPromises')
+        .timedPromise(promise, TimeOutInSeconds * 1000, `DID NOT RECEIVE A REPLY FOR MESSAGE ${messageId} WITHIN ${TimeOutInSeconds} SECONDS`)
+        .then(
+            (message) => {
+                console.log(`MESSAGE RECEIVED: ${JSON.stringify(message)}`);
+                self.eventBus.removeListener(`dagcoin.response.${messageType}`, listener);
+                return Promise.resolve(message)
+            },
+            (err) => {
+                console.log(`SOMETHING WRONG HAPPENED: ${err}`);
+                self.eventBus.removeListener(`dagcoin.response.${messageType}`, listener);
+                return Promise.reject(err);
+            }
+        );
+};
+
 DiscoveryService.prototype.sendMessage = function (message) {
     console.log(`SENDING A ${message.messageType} MESSAGE TO THE DISCOVERY SERVICE`);
 
     const self = this;
+
+    const messageString = JSON.stringify(message);
+    const messageId = this.hashCode(messageString);
+    message.id = messageId;
 
     return this.makeSureDiscoveryServiceIsConnected().then(() => {
         return new Promise((resolve, reject) => {
@@ -193,6 +234,41 @@ DiscoveryService.prototype.sendMessage = function (message) {
     });
 };
 
+DiscoveryService.prototype.sendMessageAndListen = function (message) {
+    console.log(`SENDING A ${message.messageType} MESSAGE TO THE DISCOVERY SERVICE`);
+
+    const self = this;
+
+    const messageString = JSON.stringify(message);
+    const messageId = this.hashCode(messageString + new Date());
+    message.id = messageId;
+
+    const listeningPromise = this.listenToMessage(message.messageType, messageId);
+
+    this.makeSureDiscoveryServiceIsConnected().then(() => {
+        return new Promise((resolve, reject) => {
+            this.device.sendMessageToDevice (
+                self.discoveryServiceDeviceAddress,
+                'text',
+                JSON.stringify(message),
+                {
+                    onSaved: function () {
+                        console.log(`A ${message.messageType} MESSAGE WAS SAVED INTO THE DATABASE`);
+                    },
+                    ifOk: function () {
+                        resolve();
+                    },
+                    ifError: function (err) {
+                        reject(`COULD NOT DELIVER A ${message.messageType} MESSAGE. REASON: ${err}`)
+                    }
+                }
+            );
+        });
+    });
+
+    return listeningPromise;
+};
+
 DiscoveryService.prototype.startingTheBusiness = function (pairCode) {
     const message = {
         protocol: 'dagcoin',
@@ -206,7 +282,7 @@ DiscoveryService.prototype.startingTheBusiness = function (pairCode) {
         }
     }
 
-    return this.makeSureDiscoveryServiceIsConnected().then(this.sendMessage(message));
+    return this.sendMessageAndListen(message);
 };
 
 DiscoveryService.prototype.aliveAndWell = function (pairCode) {
@@ -222,7 +298,49 @@ DiscoveryService.prototype.aliveAndWell = function (pairCode) {
         }
     }
 
-    return this.makeSureDiscoveryServiceIsConnected().then(this.sendMessage(message));
+    return this.sendMessageAndListen(message);
+};
+
+DiscoveryService.prototype.updateSettings = function (settings) {
+    const message = {
+        protocol: 'dagcoin',
+        title: `request.${this.messages.updateSettings}`,
+        messageType: this.messages.updateSettings
+    };
+
+    if (settings) {
+        message.messageBody = {
+            settings
+        }
+    }
+
+    return this.sendMessageAndListen(message);
+};
+
+DiscoveryService.prototype.outOfBusiness = function () {
+    const message = {
+        protocol: 'dagcoin',
+        title: `request.${this.messages.outOfBusiness}`,
+        messageType: this.messages.outOfBusiness
+    };
+
+    return this.sendMessageAndListen(message);
+};
+
+DiscoveryService.prototype.hashCode = function(string) {
+    var hash = 0, i, chr;
+
+    if (string.length === 0) {
+        return hash;
+    }
+
+    for (i = 0; i < string.length; i++) {
+        chr   = string.charCodeAt(i);
+        hash  = ((hash << 5) - hash) + chr;
+        hash |= 0; // Convert to 32bit integer
+    }
+
+    return hash;
 };
 
 module.exports = DiscoveryService;

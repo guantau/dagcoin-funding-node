@@ -9,8 +9,9 @@ exports.bLight = true;
 
 exports.storage = 'sqlite';
 
-//exports.deviceName = 'SOME FANCY NAME NOT TO USE THE DEFAULT Dagcoin-Funding_Node'
-exports.hub = 'byteball.org/bb-test';
+//exports.deviceName = 'SOME FANCY NAME NOT TO USE THE DEFAULT Dagcoin-Funding-Node'
+//exports.hub = 'byteball.org/bb-test';
+exports.hub = 'testnetexplorer.dagcoin.org/wss/';
 exports.permanent_pairing_secret = '1G5kGcBcsfkH';
 exports.control_addresses = ['DEVICE ALLOWED TO CHAT'];
 exports.payout_address = 'WHERE THE MONEY CAN BE SENT TO';
@@ -18,7 +19,7 @@ exports.KEYS_FILENAME = 'keys.json';
 
 // DISCOVERY SERVICE PAIRING CODE
 // Testnet on PowerEdge
-exports.discoveryServicePairingCode = 'ApwhbsSyD7cF22UWxlZyH53y1vLpjsPk5gu4AW7AIdq0@byteball.org/bb-test#0000';
+exports.discoveryServicePairingCode = 'AnqLjlEMkQsoP6yZ/vDwT41F3IE6ItfggF0oxyYsUj42@byteball.org/bb-test#0000';
 // Yary's public testnet server
 //exports.discoveryServicePairingCode = 'AhHZrVJAABB2fVTbO2CNZjvXjUi0QwaazL1uy5OMbn5O@byteball.org/bb-test#0000';
 // Local to Yary's machine

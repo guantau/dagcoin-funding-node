@@ -9,7 +9,7 @@ exports.bLight = true;
 
 exports.storage = 'sqlite';
 
-//exports.deviceName = 'SOME FANCY NAME NOT TO USE THE DEFAULT Dagcoin-Funding_Node'
+//exports.deviceName = 'SOME FANCY NAME NOT TO USE THE DEFAULT Dagcoin-Funding-Node'
 exports.hub = 'byteball.org/bb-test';
 exports.permanent_pairing_secret = 'L51iMkzcw8Lv';
 exports.control_addresses = ['DEVICE ALLOWED TO CHAT'];

@@ -1,3 +1,4 @@
+'use strict';
 exports.FOREVER = -1;
 
 exports.timedPromise = function (promise, timeout, timeoutMessage) {

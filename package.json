@@ -1,0 +1,34 @@
+{
+  "name": "dagcoin-funding-node",
+  "description": "Dagcoin Funding Node",
+  "author": "Dagcoin",
+  "version": "0.0.1",
+  "main": "start.js",
+  "keywords": [
+    "wallet",
+    "headless",
+    "dagcoin",
+    "byteball",
+    "full node",
+    "funding",
+    "node"
+  ],
+  "license": "MIT",
+  "repository": {
+    "url": "git://github.com/dagcoin/dagcoin-funding-node.git",
+    "type": "git"
+  },
+  "bugs": {
+    "url": "https://github.com/dagcoin/dagcoin-funding-node/issues"
+  },
+  "browser": {
+    "request": "browser-request",
+    "secp256k1": "secp256k1/js"
+  },
+  "dependencies": {
+    "byteballcore": "^0.2.9",
+    "bitcore-lib": "^0.13.14",
+    "bitcore-mnemonic": "~1.0.0",
+    "json-rpc2": "^1.0.2"
+  }
+}

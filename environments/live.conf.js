@@ -18,7 +18,7 @@ exports.KEYS_FILENAME = 'keys.json';
 
 // DISCOVERY SERVICE PAIRING CODE
 // LIVE
-exports.discoveryServicePairingCode = 'Not yet available';
+exports.discoveryServicePairingCode = 'A7MiDQd+H7S6kFXfEdIKrM6oW6YF2oq4ewU+eSH30YGp@byteball.org/bb#0000';
 // Testnet on PowerEdge
 // exports.discoveryServicePairingCode = 'ApwhbsSyD7cF22UWxlZyH53y1vLpjsPk5gu4AW7AIdq0@byteball.org/bb-test#0000';
 // Yary's public testnet server

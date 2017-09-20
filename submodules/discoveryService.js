@@ -66,7 +66,11 @@ DiscoveryService.prototype.makeSureDiscoveryServiceIsConnected = function () {
 
             console.log('SENDING A KEEPALIVE MESSAGE TO THE DISOVERY SERVICE');
 
-            this.device.sendMessageToDevice(discoveryServiceDeviceAddress, 'text', JSON.stringify(keepAlive));
+            try {
+                this.device.sendMessageToDevice(discoveryServiceDeviceAddress, 'text', JSON.stringify(keepAlive));
+            } catch (e) {
+                console.log(`EXCEPTION WHILE SENDIN A MESSAGE TO DEVICE ${fromAddress}: ${e}`);
+            }
 
             const attempts = 12;
 

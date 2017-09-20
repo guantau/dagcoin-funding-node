@@ -10,8 +10,8 @@ exports.bLight = true;
 exports.storage = 'sqlite';
 
 //exports.deviceName = 'SOME FANCY NAME NOT TO USE THE DEFAULT Dagcoin-Funding-Node'
-//exports.hub = 'byteball.org/bb-test';
-exports.hub = 'testnetexplorer.dagcoin.org/wss/';
+exports.hub = 'byteball.org/bb-test';
+//exports.hub = 'testnetexplorer.dagcoin.org/wss/';
 exports.permanent_pairing_secret = '1G5kGcBcsfkH';
 exports.control_addresses = ['DEVICE ALLOWED TO CHAT'];
 exports.payout_address = 'WHERE THE MONEY CAN BE SENT TO';

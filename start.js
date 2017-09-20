@@ -337,6 +337,29 @@ function setupChatEventHandlers(){
 		handlePairing(fromAddress);
 	});
 
+    // One device can send such message to check whether another device can exchange messages
+    eventBus.on('dagcoin.is-connected', (message, fromAddress) => {
+        console.log('DAGCOIN CONNECTION REQUEST');
+
+        const reply = {
+            protocol: 'dagcoin',
+            title: 'connected'
+        };
+
+        const device = require('byteballcore/device.js');
+
+        const DiscoveryService = require('./submodules/discoveryService');
+        const discoveryService = new DiscoveryService();
+
+        discoveryService.getCorrespondent(fromAddress).then((correspondent) => {
+            if(correspondent != null) {
+                device.sendMessageToDevice(fromAddress, 'text', JSON.stringify(reply));
+            } else {
+                console.log(`CORRESPONDENT OF ${fromAddress} NOT FOUND`);
+            }
+        });
+    });
+
 	eventBus.on('text', function(fromAddress, text){
 		console.log(`TEXT MESSAGE FROM ${fromAddress}: ${text}`);
 

@@ -151,7 +151,7 @@ function fund() {
 
         return Promise.resolve();
     }).then(() => {
-        return accountManager.sendPayment(sharedAddress, 1000).catch((err) => {
+        return accountManager.sendPayment(sharedAddress, 5000).catch((err) => {
             console.log(err);
         });
     }).then(() =>  {
@@ -178,7 +178,7 @@ function fundSharedAddresses () {
 
                 const baseBalance = assocBalances['base'].total || 0;
 
-                if (baseBalance < 6000) {
+                if (baseBalance < 5000) {
                     console.log(`ADDRESS ${sharedAddress} SHOULD BE FUNDED AS IT HAS JUST ${baseBalance} BYTES`);
                     fundsNeedingAddresses.push(sharedAddress);
                 }

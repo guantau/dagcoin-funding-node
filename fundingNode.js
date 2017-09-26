@@ -8,6 +8,8 @@ const AccountManager = require('./components/accountManager');
 const accountManager = new AccountManager();
 let fundingExchangeProvider = null;
 
+const fundsNeedingAddresses = new Array();
+
 if (conf.permanent_pairing_secret)
 	db.query(
 		"INSERT "+db.getIgnore()+" INTO pairing_secrets (pairing_secret, is_permanent, expiry_date) VALUES (?, 1, '2038-01-01')", 
@@ -112,30 +114,50 @@ function getSharedAddressBalance(sharedAddress) {
     });
 }
 
-function fund(addressArray) {
-    if(!addressArray || addressArray.length === 0) {
-        //JOB DONE
-        return Promise.resolve();
+function fund() {
+    console.log('NEW FUNDING SESSION');
+
+    if(!fundsNeedingAddresses || fundsNeedingAddresses.length === 0) {
+        console.log('NO NEW ADDRESSES TO FUND');
+        return new Promise((resolve) => {
+            setTimeout(resolve, 30 * 1000);
+        }).then(() => {
+            return fund();
+        });
     }
 
-    const sharedAddress = addressArray.pop();
+    const sharedAddress = fundsNeedingAddresses.pop();
 
     return accountManager.walletManager.readSingleAddress().then((myAddress) => {
         // FIND OWNING REMOTE ADDRESS
         return new Promise((resolve, reject) => {
-            db.query('SELECT address FROM shared_address_signing_paths WHERE shared_address = ?', [sharedAddress], (rows) => {
-                if(!rows || rows.length === 0) {
-                    reject(`OWNER OF ${sharedAddress} NOT FOUND`);
-                } else if (rows.length > 1) {
-                    reject(`TOO MANY OWNERs OF ${sharedAddress} FOUND: ${rows.length}`);
-                } else {
-                    resolve(rows[0].address);
+            db.query(
+                'SELECT address FROM shared_address_signing_paths WHERE shared_address = ? AND address <> ?',
+                [sharedAddress, myAddress],
+                (rows) => {
+                    if(!rows || rows.length === 0) {
+                        reject(`OWNER OF ${sharedAddress} NOT FOUND`);
+                    } else if (rows.length > 1) {
+                        reject(`TOO MANY OWNERs OF ${sharedAddress} FOUND: ${rows.length}`);
+                    } else {
+                        resolve(rows[0].address);
+                    }
                 }
-            });
+            );
         });
     }).then((remoteOwningAddress) => {
+        // TODO
         // CHECK WHETHER THE OWNING REMOTE ADDRESS HAS AT LEAST 0.5 dagcoins
 
+        return Promise.resolve();
+    }).then(() => {
+        return accountManager.sendPayment(sharedAddress, 1000);
+    }).then(() =>  {
+        return new Promise((resolve) => {
+            setTimeout(resolve, 30 * 1000);
+        });
+    }).then(() => {
+        return fund();
     });
 }
 
@@ -154,9 +176,9 @@ function fundSharedAddresses () {
 
                 const baseBalance = assocBalances['base'].total || 0;
 
-                if (baseBalance < 5000) {
+                if (baseBalance < 6000) {
                     console.log(`ADDRESS ${sharedAddress} SHOULD BE FUNDED AS IT HAS JUST ${baseBalance} BYTES`);
-                    accountManager.sendPayment(sharedAddress, 5000);
+                    fundsNeedingAddresses.push(sharedAddress);
                 }
             });
         }
@@ -190,4 +212,5 @@ setTimeout(function(){
             process.exit();
         }
     );
+    fund();
 }, 1000);

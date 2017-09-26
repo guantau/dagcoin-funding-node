@@ -112,6 +112,33 @@ function getSharedAddressBalance(sharedAddress) {
     });
 }
 
+function fund(addressArray) {
+    if(!addressArray || addressArray.length === 0) {
+        //JOB DONE
+        return Promise.resolve();
+    }
+
+    const sharedAddress = addressArray.pop();
+
+    return accountManager.walletManager.readSingleAddress().then((myAddress) => {
+        // FIND OWNING REMOTE ADDRESS
+        return new Promise((resolve, reject) => {
+            db.query('SELECT address FROM shared_address_signing_paths WHERE shared_address = ?', [sharedAddress], (rows) => {
+                if(!rows || rows.length === 0) {
+                    reject(`OWNER OF ${sharedAddress} NOT FOUND`);
+                } else if (rows.length > 1) {
+                    reject(`TOO MANY OWNERs OF ${sharedAddress} FOUND: ${rows.length}`);
+                } else {
+                    resolve(rows[0].address);
+                }
+            });
+        });
+    }).then((remoteOwningAddress) => {
+        // CHECK WHETHER THE OWNING REMOTE ADDRESS HAS AT LEAST 0.5 dagcoins
+
+    });
+}
+
 function fundSharedAddresses () {
     // LOGGING IN IF THE CONNECTION WAS LOST
     const device = require('byteballcore/device.js');

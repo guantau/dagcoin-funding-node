@@ -112,7 +112,11 @@ function getSharedAddressBalance(sharedAddress) {
     });
 }
 
-function fundSharedAddress () {
+function fundSharedAddresses () {
+    // LOGGING IN IF THE CONNECTION WAS LOST
+    const device = require('byteballcore/device.js');
+    device.loginToHub();
+
     db.query('SELECT shared_address FROM shared_addresses', [], (rows) => {
         console.log('UPDATING FUND OF SHARED ADDRESSES');
         for(let index in rows) {
@@ -152,7 +156,7 @@ setTimeout(function(){
 
             fundingExchangeProvider.handleSharedPaymentRequest();
 
-            setInterval(fundSharedAddress, 60 * 1000);
+            setInterval(fundSharedAddresses, 60 * 1000);
         },
         (err) => {
             console.log(`COULD NOT START: ${err}`);

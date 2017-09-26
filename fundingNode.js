@@ -151,7 +151,9 @@ function fund() {
 
         return Promise.resolve();
     }).then(() => {
-        return accountManager.sendPayment(sharedAddress, 1000);
+        return accountManager.sendPayment(sharedAddress, 1000).catch((err) => {
+            console.log(err);
+        });
     }).then(() =>  {
         return new Promise((resolve) => {
             setTimeout(resolve, 30 * 1000);

@@ -47,7 +47,14 @@ FundingExchangeProvider.prototype.activate = function () {
         console.log("ADDING REACTION TO dagcoin.request.share-funded-address");
         self.eventBus.on('dagcoin.request.share-funded-address', (message, deviceAddress) => {
             console.log(`REQUEST TO SHARE AN ADDRESS FROM ${deviceAddress}: ${JSON.stringify(message)}`);
-            self.shareFundedAddress(deviceAddress, message);
+            self.shareFundedAddress(deviceAddress, message).then(
+                (sharedAddress) => {
+                    console.log(`NEW SHARED ADDRESS CREATED: ${sharedAddress}`);
+                },
+                (err) => {
+                    console.log(`COULD NOT CREATE A SHARED ADDRESS: ${err}`);
+                }
+            );
         });
     });
 }
@@ -133,6 +140,17 @@ FundingExchangeProvider.prototype.initDagcoinDestination = function () {
 }
 
 FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAddress, message) {
+    this.initComponents();
+
+    const self = this;
+
+    if (this.shareFundedAddressPromise) {
+        return this.shareFundedAddressPromise.then((sharedAddress) => {
+            console.log(`SHARED ADDRESS ${sharedAddress} CREATED AND SHARED. MOVING ON WITH THE NEXT REQUEST`);
+            return self.shareFundedAddress(remoteDeviceAddress, message)
+        });
+    }
+
     const remoteAddress = message.address;
 
     if(!remoteAddress) {
@@ -141,36 +159,77 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
 
     console.log(`REQUEST FROM ${remoteDeviceAddress}:${remoteAddress} ${JSON.stringify(message)}`);
 
-    this.initComponents();
-
-    const self = this;
     const myDeviceAddress = this.device.getMyDeviceAddress();
 
     console.log('STARTING THE ADDRESS GENERATION PROCESS');
 
-    return this.initDagcoinDestination().then((myAddress) => {
-        console.log(`MY ADDRESS: ${myAddress}`);
-
-        const addressDefinitionTemplate = JSON.parse(`["and", [["address", "$address@${myDeviceAddress}"], ["address", "$address@${remoteDeviceAddress}"]]]`);
-        const sharedAddress = this.objectHash.getChash160(addressDefinitionTemplate);
-
-        return new Promise(function (resolve, reject) {
+    this.shareFundedAddressPromise = this.initDagcoinDestination().then((myAddress) => {
+        return new Promise((resolve) => {
+            // CHECK IF THE SHARED ADDRESS FOR THE REQUESTOR ALREADY EXISTS
             self.db.query(
-                'SELECT definition_template_chash FROM pending_shared_addresses WHERE definition_template_chash = ?',
-                [sharedAddress],
-                function (rows) {
-                    console.log(`FOUND ${rows.length} WITH definition_template_chash ${sharedAddress}`);
-                    if(rows.length > 0) {
-                        reject("ALREADY ON PROCESSING");
+                'SELECT shared_address FROM shared_address_signing_paths WHERE \
+                address = ? AND device_address = ?',
+                [remoteAddress, remoteDeviceAddress],
+                (rows) => {
+                    if (rows && rows.length > 0) {
+                        resolve(rows[0].sharedAddress);
+                    } else {
+                        resolve(null);
                     }
-
-                    console.log(`ADDRESS DEFINITION TEMPLATE: ${JSON.stringify(addressDefinitionTemplate)}`);
-
-                    self.walletDefinedByAddress.createNewSharedAddressByTemplate(addressDefinitionTemplate, myAddress, {"r": myDeviceAddress });
-
-                    resolve(sharedAddress);
                 }
             );
+        }).then((sharedAddressFoundInDb) => {
+            if(sharedAddressFoundInDb) {
+                console.log(`AN ADDRESS SHARED WITH ${remoteDeviceAddress}:${remoteAddress} WAS FOUND IN THE DB: ${sharedAddressFoundInDb}`);
+                return Promise.resolve(sharedAddressFoundInDb);
+            }
+
+            console.log(`MY ADDRESS: ${myAddress}`);
+
+            const addressDefinitionTemplate = JSON.parse(`["and", [["address", "$address@${myDeviceAddress}"], ["address", "$address@${remoteDeviceAddress}"]]]`);
+            const sharedAddress = this.objectHash.getChash160(addressDefinitionTemplate);
+
+            // CHECK IN THE PENDING TABLES
+
+            return new Promise(function (resolve, reject) {
+                console.log(`ADDRESS DEFINITION TEMPLATE: ${JSON.stringify(addressDefinitionTemplate)}`);
+
+                self.db.query(
+                    'SELECT definition_template_chash, creation_date FROM pending_shared_addresses WHERE definition_template_chash = ?',
+                    [sharedAddress],
+                    function (rows) {
+                        console.log(`FOUND ${rows.length} WITH definition_template_chash ${sharedAddress}`);
+                        if (rows.length > 0) {
+                            const existingTmp = rows[0];
+
+                            if (new Date(existingTmp.creation_date).getTime() > new Date().getTime() - 1000 * 60 * 10) {
+                                // WAITING 5 MINUTES FOR THE PROPOSAL TO BE ACCEPTED
+                                reject("ALREADY ON PROCESSING");
+                            } else {
+                                // CLEANING UP THE PENDING TABLES: THE PROPOSAL WENT LOST OR WAS NOT ACCEPTED
+                                self.db.query(
+                                    'DELETE FROM pending_shared_address_signing_paths WHERE definition_template_chash = ?',
+                                    [sharedAddress],
+                                    () => {
+                                        self.db.query(
+                                            'DELETE FROM pending_shared_addresses WHERE definition_template_chash = ?',
+                                            [sharedAddress],
+                                            () => {
+                                                resolve();
+                                            }
+                                        );
+                                    }
+                                );
+                            }
+                        } else {
+                            resolve();
+                        }
+                    }
+                );
+            }).then(() => {
+                self.walletDefinedByAddress.createNewSharedAddressByTemplate(addressDefinitionTemplate, myAddress, {"r": myDeviceAddress });
+                resolve(sharedAddress);
+            });
         });
     }).then((sharedAddress) => {
         console.log(`SHARED ADDRESS: ${sharedAddress}`);
@@ -202,7 +261,16 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
                 }
             );
         });
-    });
+    }).then(
+        (sharedAddress) => {
+            this.shareFundedAddressPromise = null;
+            return Promise.resolve(sharedAddress);
+        },
+        (error) => {
+            this.shareFundedAddressPromise = null;
+            return Promise.reject(error);
+        }
+    );
 }
 
 FundingExchangeProvider.prototype.initComponents = function () {

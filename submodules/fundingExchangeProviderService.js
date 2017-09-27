@@ -3,6 +3,7 @@ function FundingExchangeProvider (pairingString, xPrivKey) {
     this.conf = require('byteballcore/conf.js');
     this.eventBus = require('byteballcore/event_bus');
     this.db = require('byteballcore/db');
+    this.timedPromises = require('./timedPromises');
 
     this.exchangeFee = this.conf.exchangeFee;
     this.totalBytes = this.conf.totalBytes;
@@ -196,7 +197,7 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
             console.log(`MY ADDRESS: ${myAddress}`);
 
             const addressDefinitionTemplate = JSON.parse(`["and", [["address", "$address@${myDeviceAddress}"], ["address", "$address@${remoteDeviceAddress}"]]]`);
-            const sharedAddress = this.objectHash.getChash160(addressDefinitionTemplate);
+            const definitionTemplaceHash = this.objectHash.getChash160(addressDefinitionTemplate);
 
             // CHECK IN THE PENDING TABLES
 
@@ -205,9 +206,9 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
 
                 self.db.query(
                     'SELECT definition_template_chash, creation_date FROM pending_shared_addresses WHERE definition_template_chash = ?',
-                    [sharedAddress],
+                    [definitionTemplaceHash],
                     function (rows) {
-                        console.log(`FOUND ${rows.length} WITH definition_template_chash ${sharedAddress}`);
+                        console.log(`FOUND ${rows.length} WITH definition_template_chash ${definitionTemplaceHash}`);
                         if (rows.length > 0) {
                             const existingTmp = rows[0];
 
@@ -218,11 +219,11 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
                                 // CLEANING UP THE PENDING TABLES: THE PROPOSAL WENT LOST OR WAS NOT ACCEPTED
                                 self.db.query(
                                     'DELETE FROM pending_shared_address_signing_paths WHERE definition_template_chash = ?',
-                                    [sharedAddress],
+                                    [definitionTemplaceHash],
                                     () => {
                                         self.db.query(
                                             'DELETE FROM pending_shared_addresses WHERE definition_template_chash = ?',
-                                            [sharedAddress],
+                                            [definitionTemplaceHash],
                                             () => {
                                                 resolve();
                                             }
@@ -237,16 +238,16 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
                 );
             }).then(() => {
                 self.walletDefinedByAddress.createNewSharedAddressByTemplate(addressDefinitionTemplate, myAddress, {"r": myDeviceAddress });
-                resolve(sharedAddress);
+                resolve(definitionTemplaceHash);
             });
         });
-    }).then((sharedAddress) => {
+    }).then((definitionTemplaceHash) => {
         console.log(`SHARED ADDRESS: ${sharedAddress}`);
 
         const response = {
             protocol: 'dagcoin',
             title: 'response.share-funded-address',
-            byteOrigin: sharedAddress,
+            byteOrigin: definitionTemplaceHash, // TODO: this is not the right address. It might not be ready yet at this point
             dagcoinDestination: self.dagcoinDestination
         };
 
@@ -261,7 +262,7 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
                 JSON.stringify(response),
                 {
                     ifOk() {
-                        resolve(sharedAddress);
+                        resolve(definitionTemplaceHash);
                     },
                     ifError(error) {
                         reject(error);
@@ -270,9 +271,9 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
             );
         });
     }).then(
-        (sharedAddress) => {
+        (definitionTemplaceHash) => {
             this.shareFundedAddressPromise = null;
-            return Promise.resolve(sharedAddress);
+            return Promise.resolve(definitionTemplaceHash);
         },
         (error) => {
             this.shareFundedAddressPromise = null;

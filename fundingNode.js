@@ -180,7 +180,9 @@ function fundSharedAddresses () {
 
                 if (baseBalance < 5000) {
                     console.log(`ADDRESS ${sharedAddress} SHOULD BE FUNDED AS IT HAS JUST ${baseBalance} BYTES`);
-                    fundsNeedingAddresses.push(sharedAddress);
+                    if(fundsNeedingAddresses.indexOf(sharedAddress) >= 0) {
+                        fundsNeedingAddresses.push(sharedAddress);
+                    }
                 }
             });
         }

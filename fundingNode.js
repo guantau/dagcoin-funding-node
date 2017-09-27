@@ -179,8 +179,8 @@ function fundSharedAddresses () {
                 const baseBalance = assocBalances['base'].total || 0;
 
                 if (baseBalance < 5000) {
-                    console.log(`ADDRESS ${sharedAddress} SHOULD BE FUNDED AS IT HAS JUST ${baseBalance} BYTES`);
                     if(fundsNeedingAddresses.indexOf(sharedAddress) >= 0) {
+                        console.log(`ADDRESS ${sharedAddress} SHOULD BE FUNDED AS IT HAS JUST ${baseBalance} BYTES`);
                         fundsNeedingAddresses.push(sharedAddress);
                     }
                 }

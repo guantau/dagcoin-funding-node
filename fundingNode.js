@@ -194,22 +194,30 @@ function fundSharedAddresses () {
 setTimeout(function(){
     accountManager.readAccount().then(
         () => {
-            setupChatEventHandlers();
+            try {
+                setupChatEventHandlers();
 
-            const FundingExchangeProvider = require('./submodules/fundingExchangeProviderService');
-            fundingExchangeProvider = new FundingExchangeProvider(accountManager.getPairingCode(), accountManager.getPrivateKey());
-            fundingExchangeProvider
-                .activate()
-                .then(() => {
-                    console.log('COMPLETED ACTIVATION ... UPDATING SETTINGS');
-                    return fundingExchangeProvider.updateSettings()
-                }).catch(err => {
-                console.log(err);
-            });
+                console.log('WHAT');
 
-            fundingExchangeProvider.handleSharedPaymentRequest();
+                const FundingExchangeProvider = require('./submodules/fundingExchangeProviderService');
+                console.log('HANDLERS ARE UP');
+                fundingExchangeProvider = new FundingExchangeProvider(accountManager.getPairingCode(), accountManager.getPrivateKey());
+                fundingExchangeProvider
+                    .activate()
+                    .then(() => {
+                        console.log('COMPLETED ACTIVATION ... UPDATING SETTINGS');
+                        return fundingExchangeProvider.updateSettings()
+                    }).catch(err => {
+                    console.log(err);
+                });
 
-            setInterval(fundSharedAddresses, 60 * 1000);
+                fundingExchangeProvider.handleSharedPaymentRequest();
+
+                setInterval(fundSharedAddresses, 60 * 1000);
+            } catch (e) {
+                console.log(e);
+                process.exit();
+            }
         },
         (err) => {
             console.log(`COULD NOT START: ${err}`);

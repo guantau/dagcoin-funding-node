@@ -1,3 +1,4 @@
+"use strict"
 function FundingExchangeProvider (pairingString, xPrivKey) {
     this.conf = require('byteballcore/conf.js');
     this.eventBus = require('byteballcore/event_bus');
@@ -28,10 +29,13 @@ function FundingExchangeProvider (pairingString, xPrivKey) {
 
 FundingExchangeProvider.prototype.activate = function () {
     if (this.active) {
+        console.log('ALREADY ACTIVE');
         return Promise.resolve();
     }
 
     const self = this;
+
+    console.log('GOING TO START THE BUSINESS');
 
     return this.discoveryService.startingTheBusiness(this.pairingString).then((response) => {
         if (response) {
@@ -145,10 +149,15 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
     const self = this;
 
     if (this.shareFundedAddressPromise) {
-        return this.shareFundedAddressPromise.then((sharedAddress) => {
-            console.log(`SHARED ADDRESS ${sharedAddress} CREATED AND SHARED. MOVING ON WITH THE NEXT REQUEST`);
-            return self.shareFundedAddress(remoteDeviceAddress, message);
-        });
+        return this.shareFundedAddressPromise.then(
+            (sharedAddress) => {
+                console.log(`SHARED ADDRESS ${sharedAddress} CREATED AND SHARED. MOVING ON WITH THE NEXT REQUEST`);
+                return self.shareFundedAddress(remoteDeviceAddress, message);
+            }, (err) => {
+                console.log(`THERE WERE TROUBLES CREATING A SHARED ADDRESS: ${err}. MOVING ON WITH THE NEXT REQUEST`);
+                return self.shareFundedAddress(remoteDeviceAddress, message);
+            }
+        );
     }
 
     const remoteAddress = message.address;

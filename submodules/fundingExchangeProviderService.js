@@ -147,7 +147,7 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
     if (this.shareFundedAddressPromise) {
         return this.shareFundedAddressPromise.then((sharedAddress) => {
             console.log(`SHARED ADDRESS ${sharedAddress} CREATED AND SHARED. MOVING ON WITH THE NEXT REQUEST`);
-            return self.shareFundedAddress(remoteDeviceAddress, message)
+            return self.shareFundedAddress(remoteDeviceAddress, message);
         });
     }
 
@@ -270,6 +270,8 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
             return Promise.reject(error);
         }
     );
+
+    return this.shareFundedAddressPromise;
 };
 
 FundingExchangeProvider.prototype.initComponents = function () {

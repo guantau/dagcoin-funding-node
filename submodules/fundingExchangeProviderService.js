@@ -57,7 +57,7 @@ FundingExchangeProvider.prototype.activate = function () {
             );
         });
     });
-}
+};
 
 FundingExchangeProvider.prototype.updateSettings = function () {
     const settings = {
@@ -105,7 +105,7 @@ FundingExchangeProvider.prototype.keepAlive = function () {
             self.keepAlive();
         }, 10 * 60 * 1000);
     });
-}
+};
 
 FundingExchangeProvider.prototype.initDagcoinDestination = function () {
     const self = this;
@@ -128,7 +128,7 @@ FundingExchangeProvider.prototype.initDagcoinDestination = function () {
     }).then((walletId) => {
         return new Promise((resolve, reject) => {
             self.walletDefinedByKeys.readAddresses(walletId, {}, (rows) => {
-                if (rows.length == 0) {
+                if (!rows || rows.length === 0) {
                     reject('NO ADDRESSES AVAILABLE');
                 } else {
                     self.dagcoinDestination = rows[0].address;
@@ -137,7 +137,7 @@ FundingExchangeProvider.prototype.initDagcoinDestination = function () {
             });
         });
     });
-}
+};
 
 FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAddress, message) {
     this.initComponents();
@@ -234,7 +234,6 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
     }).then((sharedAddress) => {
         console.log(`SHARED ADDRESS: ${sharedAddress}`);
 
-
         const response = {
             protocol: 'dagcoin',
             title: 'response.share-funded-address',
@@ -271,7 +270,7 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
             return Promise.reject(error);
         }
     );
-}
+};
 
 FundingExchangeProvider.prototype.initComponents = function () {
     if (!this.mutex) {
@@ -309,10 +308,10 @@ FundingExchangeProvider.prototype.initComponents = function () {
     if (!this.ecdsaSig) {
         this.ecdsaSig = require('byteballcore/signature.js');
     }
-}
+};
 
 FundingExchangeProvider.prototype.handleSharedPaymentRequest = function () {
-    var assocChoicesByUnit = {};
+    const assocChoicesByUnit = {};
 
     this.initComponents();
 
@@ -321,29 +320,29 @@ FundingExchangeProvider.prototype.handleSharedPaymentRequest = function () {
     self.eventBus.on("signing_request", function(objAddress, top_address, objUnit, assocPrivatePayloads, from_address, signing_path){
 
         function createAndSendSignature(){
-            var coin = "0";
-            var path = "m/44'/" + coin + "'/" + objAddress.account + "'/"+objAddress.is_change+"/"+objAddress.address_index;
+            const coin = "0";
+            const path = "m/44'/" + coin + "'/" + objAddress.account + "'/"+objAddress.is_change+"/"+objAddress.address_index;
             console.log("path "+path);
 
-            var privateKey = self.xPrivKey.derive(path).privateKey;
+            const privateKey = self.xPrivKey.derive(path).privateKey;
             console.log("priv key:", privateKey);
             //var privKeyBuf = privateKey.toBuffer();
-            var privKeyBuf = privateKey.bn.toBuffer({size:32}); // https://github.com/bitpay/bitcore-lib/issues/47
+            const privKeyBuf = privateKey.bn.toBuffer({size:32}); // https://github.com/bitpay/bitcore-lib/issues/47
             console.log("priv key buf:", privKeyBuf);
-            var buf_to_sign = self.objectHash.getUnitHashToSign(objUnit);
-            var signature = self.ecdsaSig.sign(buf_to_sign, privKeyBuf);
+            const buf_to_sign = self.objectHash.getUnitHashToSign(objUnit);
+            const signature = self.ecdsaSig.sign(buf_to_sign, privKeyBuf);
             bbWallet.sendSignature(from_address, buf_to_sign.toString("base64"), signature, signing_path, top_address);
             console.log("sent signature "+signature);
         }
 
         function refuseSignature(){
-            var buf_to_sign = self.objectHash.getUnitHashToSign(objUnit);
+            const buf_to_sign = self.objectHash.getUnitHashToSign(objUnit);
             bbWallet.sendSignature(from_address, buf_to_sign.toString("base64"), "[refused]", signing_path, top_address);
             console.log("refused signature");
         }
 
-        var bbWallet = require('byteballcore/wallet.js');
-        var unit = objUnit.unit;
+        const bbWallet = require('byteballcore/wallet.js');
+        const unit = objUnit.unit;
         self.mutex.lock(["signing_request-"+unit], function(unlock){
 
             // apply the previously obtained decision.
@@ -357,24 +356,24 @@ FundingExchangeProvider.prototype.handleSharedPaymentRequest = function () {
             }
 
             self.walletDefinedByKeys.readChangeAddresses(objAddress.wallet, function(arrChangeAddressInfos){
-                var arrAuthorAddresses = objUnit.authors.map(function(author){ return author.address; });
-                var arrChangeAddresses = arrChangeAddressInfos.map(function(info){ return info.address; });
+                const arrAuthorAddresses = objUnit.authors.map(function(author){ return author.address; });
+                let arrChangeAddresses = arrChangeAddressInfos.map(function(info){ return info.address; });
                 arrChangeAddresses = arrChangeAddresses.concat(arrAuthorAddresses);
                 arrChangeAddresses.push(top_address);
-                var arrPaymentMessages = objUnit.messages.filter(function(objMessage){ return (objMessage.app === "payment"); });
+                const arrPaymentMessages = objUnit.messages.filter(function(objMessage){ return (objMessage.app === "payment"); });
                 if (arrPaymentMessages.length === 0)
                     throw Error("no payment message found");
-                var assocAmountByAssetAndAddress = {};
+                const assocAmountByAssetAndAddress = {};
                 // exclude outputs paying to my change addresses
                 self.async.eachSeries(
                     arrPaymentMessages,
                     function(objMessage, cb){
-                        var payload = objMessage.payload;
+                        let payload = objMessage.payload;
                         if (!payload)
                             payload = assocPrivatePayloads[objMessage.payload_hash];
                         if (!payload)
                             throw Error("no inline payload and no private payload either, message="+JSON.stringify(objMessage));
-                        var asset = payload.asset || "base";
+                        const asset = payload.asset || "base";
                         if (!payload.outputs)
                             throw Error("no outputs");
                         if (!assocAmountByAssetAndAddress[asset])
@@ -389,14 +388,14 @@ FundingExchangeProvider.prototype.handleSharedPaymentRequest = function () {
                         cb();
                     },
                     function(){
-                        var unitName = "bytes";//config.unitName;
-                        var bbUnitName = 'blackbytes';//config.bbUnitName;
+                        const unitName = "bytes";//config.unitName;
+                        const bbUnitName = 'blackbytes';//config.bbUnitName;
 
-                        var arrDestinations = [];
-                        for (var asset in assocAmountByAssetAndAddress){
+                        const arrDestinations = [];
+                        for (let asset in assocAmountByAssetAndAddress){
 
-                            var currency = "of asset "+asset;
-                            var assetName = asset;
+                            let currency = "of asset "+asset;
+                            let assetName = asset;
                             if(asset === 'base'){
                                 currency = unitName;
                                 assetName = 'base';
@@ -404,10 +403,10 @@ FundingExchangeProvider.prototype.handleSharedPaymentRequest = function () {
                                 currency = bbUnitName;
                                 assetName = 'blackbytes';
                             }
-                            for (var address in assocAmountByAssetAndAddress[asset])
+                            for (let address in assocAmountByAssetAndAddress[asset])
                                 arrDestinations.push(assocAmountByAssetAndAddress[asset][address] + assetName + " " + currency + " to " + address);
                         }
-                        var dest = (arrDestinations.length > 0) ? arrDestinations.join(", ") : "to myself";
+                        const dest = (arrDestinations.length > 0) ? arrDestinations.join(", ") : "to myself";
                         // var question = 'Sign transaction spending '+dest+' from wallet '+wallet_id+'?';
                         // console.log(question);
 
@@ -431,7 +430,7 @@ FundingExchangeProvider.prototype.handleSharedPaymentRequest = function () {
             });
         });
     });
-}
+};
 
 
 module.exports = FundingExchangeProvider;

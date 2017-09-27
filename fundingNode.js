@@ -11,20 +11,20 @@ let fundingExchangeProvider = null;
 const fundsNeedingAddresses = new Array();
 
 if (conf.permanent_pairing_secret)
-	db.query(
-		"INSERT "+db.getIgnore()+" INTO pairing_secrets (pairing_secret, is_permanent, expiry_date) VALUES (?, 1, '2038-01-01')", 
-		[conf.permanent_pairing_secret]
-	);
+    db.query(
+        "INSERT " + db.getIgnore() + " INTO pairing_secrets (pairing_secret, is_permanent, expiry_date) VALUES (?, 1, '2038-01-01')",
+        [conf.permanent_pairing_secret]
+    );
 
-function handlePairing(from_address){
-	console.log(`PAIRED WITH ${from_address}`);
+function handlePairing(from_address) {
+    console.log(`PAIRED WITH ${from_address}`);
 }
 
-function setupChatEventHandlers(){
-	eventBus.on('paired', function(fromAddress){
-		console.log('paired '+fromAddress);
-		handlePairing(fromAddress);
-	});
+function setupChatEventHandlers() {
+    eventBus.on('paired', function (fromAddress) {
+        console.log('paired ' + fromAddress);
+        handlePairing(fromAddress);
+    });
 
     // One device can send such message to check whether another device can exchange messages
     eventBus.on('dagcoin.is-connected', (message, fromAddress) => {
@@ -41,7 +41,7 @@ function setupChatEventHandlers(){
         const discoveryService = new DiscoveryService();
 
         discoveryService.getCorrespondent(fromAddress).then((correspondent) => {
-            if(correspondent != null) {
+            if (correspondent != null) {
                 device.sendMessageToDevice(fromAddress, 'text', JSON.stringify(reply));
             } else {
                 console.log(`CORRESPONDENT OF ${fromAddress} NOT FOUND`);
@@ -49,10 +49,10 @@ function setupChatEventHandlers(){
         });
     });
 
-	eventBus.on('text', function(fromAddress, text){
-		console.log(`TEXT MESSAGE FROM ${fromAddress}: ${text}`);
+    eventBus.on('text', function (fromAddress, text) {
+        console.log(`TEXT MESSAGE FROM ${fromAddress}: ${text}`);
 
-		let message = null;
+        let message = null;
 
         try {
             message = JSON.parse(text);
@@ -69,7 +69,7 @@ function setupChatEventHandlers(){
 
             console.log(`JSON MESSAGE RECEIVED FROM ${fromAddress} WITH UNEXPECTED PROTOCOL: ${message.protocol}`);
         }
-	});
+    });
 }
 
 function getSharedAddressBalance(sharedAddress) {
@@ -86,19 +86,19 @@ function getSharedAddressBalance(sharedAddress) {
             SELECT NULL AS asset, address, 1 AS is_stable, SUM(amount) AS balance FROM headers_commission_outputs \n\
             WHERE is_spent=0 AND address = ? GROUP BY address",
             [sharedAddress, sharedAddress, sharedAddress],
-            function(rows){
+            function (rows) {
                 const assocBalances = {};
 
                 assocBalances["base"] = {stable: 0, pending: 0, total: 0};
 
-                for (var i=0; i<rows.length; i++){
+                for (var i = 0; i < rows.length; i++) {
                     var row = rows[i];
 
                     console.log(`SOMETHING FOR ${sharedAddress}: ${JSON.stringify(row)}`);
 
                     var asset = row.asset || "base";
 
-                    if (!assocBalances[asset]){
+                    if (!assocBalances[asset]) {
                         assocBalances[asset] = {stable: 0, pending: 0, total: 0};
                         console.log(`CREATED THE BALANCES ARRAY OF ADDRESS ${sharedAddress} FOR ASSET ${asset}`);
                     }
@@ -117,7 +117,7 @@ function getSharedAddressBalance(sharedAddress) {
 function fund() {
     console.log('NEW FUNDING SESSION');
 
-    if(!fundsNeedingAddresses || fundsNeedingAddresses.length === 0) {
+    if (!fundsNeedingAddresses || fundsNeedingAddresses.length === 0) {
         console.log('NO NEW ADDRESSES TO FUND');
         return new Promise((resolve) => {
             setTimeout(resolve, 30 * 1000);
@@ -135,7 +135,7 @@ function fund() {
                 'SELECT address FROM shared_address_signing_paths WHERE shared_address = ? AND address <> ?',
                 [sharedAddress, myAddress],
                 (rows) => {
-                    if(!rows || rows.length === 0) {
+                    if (!rows || rows.length === 0) {
                         reject(`OWNER OF ${sharedAddress} NOT FOUND`);
                     } else if (rows.length > 1) {
                         reject(`TOO MANY OWNERs OF ${sharedAddress} FOUND: ${rows.length}`);
@@ -154,7 +154,7 @@ function fund() {
         return accountManager.sendPayment(sharedAddress, 5000).catch((err) => {
             console.log(err);
         });
-    }).then(() =>  {
+    }).then(() => {
         return new Promise((resolve) => {
             setTimeout(resolve, 30 * 1000);
         });
@@ -163,14 +163,14 @@ function fund() {
     });
 }
 
-function fundSharedAddresses () {
+function fundSharedAddresses() {
     // LOGGING IN IF THE CONNECTION WAS LOST
     const device = require('byteballcore/device.js');
     device.loginToHub();
 
     db.query('SELECT shared_address FROM shared_addresses', [], (rows) => {
         console.log('UPDATING FUND OF SHARED ADDRESSES');
-        for(let index in rows) {
+        for (let index in rows) {
             const sharedAddress = rows[index].shared_address;
 
             getSharedAddressBalance(sharedAddress).then((assocBalances) => {
@@ -179,7 +179,7 @@ function fundSharedAddresses () {
                 const baseBalance = assocBalances['base'].total || 0;
 
                 if (baseBalance < 5000) {
-                    if(fundsNeedingAddresses.indexOf(sharedAddress) >= 0) {
+                    if (fundsNeedingAddresses.indexOf(sharedAddress) < 0) {
                         console.log(`ADDRESS ${sharedAddress} SHOULD BE FUNDED AS IT HAS JUST ${baseBalance} BYTES`);
                         fundsNeedingAddresses.push(sharedAddress);
                     }
@@ -191,7 +191,7 @@ function fundSharedAddresses () {
     });
 }
 
-setTimeout(function(){
+setTimeout(function () {
     accountManager.readAccount().then(
         () => {
             try {

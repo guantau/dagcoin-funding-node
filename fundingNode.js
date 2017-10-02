@@ -146,15 +146,52 @@ function fund() {
             );
         });
     }).then((remoteOwningAddress) => {
-        // TODO
-        // CHECK WHETHER THE OWNING REMOTE ADDRESS HAS AT LEAST 0.5 dagcoins
+        return new Promise((resolve, reject) => {
+            const http = require('http');
 
-        return Promise.resolve();
-    }).then(() => {
-        return accountManager.sendPayment(sharedAddress, 5000).catch((err) => {
-            console.log(err);
+            http.get(`http://localhost:9852/getAddressBalance?address=${remoteOwningAddress}`, (resp) => {
+                let data = '';
+
+                // A chunk of data has been received.
+                resp.on('data', (chunk) => {
+                    data += chunk;
+                });
+
+                // The whole response has been received. Print out the result.
+                resp.on('end', () => {
+                    try {
+                        const balance = JSON.parse(data);
+
+                        if (balance[conf.dagcoinAsset] && balance[conf.dagcoinAsset].stable >= 500000) {
+                            resolve(true);
+                        } else {
+                            console.log(`NOT ENOUGH DAGCOINS CONFIRMED ON ${remoteOwningAddress} FOR FUNDING ITS SHARED ADDRESS`);
+                            resolve(false);
+                        }
+                    } catch (e) {
+                        reject(`COULD NOT PARSE ${data} INTO A JSON OBJECT: ${e}`);
+                    }
+                });
+            }).on("error", (err) => {
+                reject(err.message);
+            });
         });
-    }).then(() => {
+    }).then(
+        (hasEnoughDagcoins) => {
+            if (hasEnoughDagcoins) {
+                return accountManager.sendPayment(sharedAddress, 5000).catch((err) => {
+                    console.log(err);
+                });
+            } else {
+                console.log(`WILL NOT FUND ${sharedAddress}, THE REMOTE OWNER DOES NOT HAVE ENOUGH DAGCOINS`);
+                return Promise.resolve();
+            }
+        },
+        (err) => {
+            console.log(`AN ERROR OCCURRED: ${err}`);
+            return Promise.resolve();
+        }
+    ).then(() => {
         return new Promise((resolve) => {
             setTimeout(resolve, 30 * 1000);
         });

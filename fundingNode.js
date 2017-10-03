@@ -179,9 +179,16 @@ function fund() {
     }).then(
         (hasEnoughDagcoins) => {
             if (hasEnoughDagcoins) {
-                return accountManager.sendPayment(sharedAddress, 5000).catch((err) => {
-                    console.log(err);
-                });
+                return accountManager.sendPayment(sharedAddress, 5000).then(
+                    () => {
+                        return new Promise((resolve) => {
+                            setTimeout(resolve, 30 * 1000);
+                        });
+                    },
+                    (err) => {
+                        console.log(err);
+                    }
+                );
             } else {
                 console.log(`WILL NOT FUND ${sharedAddress}, THE REMOTE OWNER DOES NOT HAVE ENOUGH DAGCOINS`);
                 return Promise.resolve();
@@ -192,10 +199,6 @@ function fund() {
             return Promise.resolve();
         }
     ).then(() => {
-        return new Promise((resolve) => {
-            setTimeout(resolve, 30 * 1000);
-        });
-    }).then(() => {
         return fund();
     });
 }

@@ -32,7 +32,7 @@ exports.discoveryServicePairingCode = 'AnqLjlEMkQsoP6yZ/vDwT41F3IE6ItfggF0oxyYsU
 exports.rpcInterface = '127.0.0.1';
 exports.rpcPort = '6332';
 
-exports.exchangeFee = 0.001;
+exports.exchangeFee = 0.0005;
 exports.totalBytes =  100000;
 exports.bytesPerAddress = 10000;
 exports.maxEndUserCapacity = 10;

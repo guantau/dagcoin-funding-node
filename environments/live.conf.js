@@ -9,7 +9,7 @@ exports.bLight = true;
 
 exports.storage = 'sqlite';
 
-exports.deviceName = 'Live-Funding-Node';
+exports.deviceName = 'Livenet-Funding-Node';
 exports.hub = 'byteball.org/bb';
 exports.permanent_pairing_secret = '9oHh6ZuMimx3';
 exports.control_addresses = ['DEVICE ALLOWED TO CHAT'];
@@ -33,7 +33,7 @@ exports.discoveryServicePairingCode = 'A7MiDQd+H7S6kFXfEdIKrM6oW6YF2oq4ewU+eSH30
 exports.rpcInterface = '127.0.0.1';
 exports.rpcPort = '6332';
 
-exports.exchangeFee = 0.001;
+exports.exchangeFee = 0.0005;
 exports.totalBytes =  100000;
 exports.bytesPerAddress = 10000;
 exports.maxEndUserCapacity = 10;

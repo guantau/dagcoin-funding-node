@@ -25,7 +25,6 @@ Signer.prototype.signWithLocalPrivateKey = function (wallet_id, account, is_chan
 Signer.prototype.readSigningPaths = function(conn, address, handleLengthsBySigningPaths) {
     const self = this;
 
-    //TODO: use full signing path reader (see: wallet.js:1082)
     const arrSigningDeviceAddresses = [self.device.getMyDeviceAddress()];
 
     this.readFullSigningPaths(conn, address, arrSigningDeviceAddresses, function(assocTypesBySigningPaths){

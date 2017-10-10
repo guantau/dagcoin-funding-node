@@ -442,11 +442,26 @@ FundingExchangeProvider.prototype.handleSharedPaymentRequest = function () {
 
                         let approve = true;
 
-                        // The service fee must be present and equal to 500 microdags.
+                        let authors = objUnit.authors;
+
+                        console.log(`UNIT AUTHORS: ${JSON.stringify(authors)}`);
+
+                        // Not allowed to use the dagcoin destination as author. Users might steal dagcoins on this address
+                        for(let i = 0; i < authors.length; i++) {
+                            const author = authors[i];
+
+                            console.log(`UNIT AUTHOR: ${JSON.stringify(author.address)}`);
+
+                            if (author && author.address && author.address === self.dagcoinDestination) {
+                                approve = false;
+                            }
+                        }
+
+                        // The service fee must be present and at least 500 microdags.
                         if (
                             !assocAmountByAssetAndAddress[self.conf.dagcoinAsset]
                             || !assocAmountByAssetAndAddress[self.conf.dagcoinAsset][self.dagcoinDestination]
-                            || assocAmountByAssetAndAddress[self.conf.dagcoinAsset][self.dagcoinDestination] !== 500
+                            || assocAmountByAssetAndAddress[self.conf.dagcoinAsset][self.dagcoinDestination] > 500
                         ) {
                             approve = false;
                         }

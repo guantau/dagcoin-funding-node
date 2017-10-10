@@ -9,7 +9,7 @@ exports.bLight = true;
 
 exports.storage = 'sqlite';
 
-//exports.deviceName = 'SOME FANCY NAME NOT TO USE THE DEFAULT Dagcoin-Funding-Node'
+exports.deviceName = 'Testnet-Funding-Node';
 exports.hub = 'byteball.org/bb-test';
 //exports.hub = 'testnetexplorer.dagcoin.org/wss/';
 exports.permanent_pairing_secret = '1G5kGcBcsfkH';

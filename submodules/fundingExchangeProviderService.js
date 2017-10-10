@@ -458,10 +458,11 @@ FundingExchangeProvider.prototype.handleSharedPaymentRequest = function () {
                         }
 
                         // The service fee must be present and at least 500 microdags.
+                        //TODO: set the check value to exact the transaction fee.
                         if (
                             !assocAmountByAssetAndAddress[self.conf.dagcoinAsset]
                             || !assocAmountByAssetAndAddress[self.conf.dagcoinAsset][self.dagcoinDestination]
-                            || assocAmountByAssetAndAddress[self.conf.dagcoinAsset][self.dagcoinDestination] > 500
+                            || assocAmountByAssetAndAddress[self.conf.dagcoinAsset][self.dagcoinDestination] < 500
                         ) {
                             approve = false;
                         }

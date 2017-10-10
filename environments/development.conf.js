@@ -9,7 +9,7 @@ exports.bLight = true;
 
 exports.storage = 'sqlite';
 
-exports.deviceName = 'Dev-Funding-Node'
+exports.deviceName = 'Dev-Funding-Node';
 exports.hub = 'byteball.org/bb-test';
 exports.permanent_pairing_secret = 'L51iMkzcw8Lv';
 exports.control_addresses = ['DEVICE ALLOWED TO CHAT'];

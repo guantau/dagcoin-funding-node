@@ -16,7 +16,6 @@ function Signer (xPrivateKey) {
 
 Signer.prototype.signWithLocalPrivateKey = function (wallet_id, account, is_change, address_index, text_to_sign, handleSig) {
 	const path = "m/44'/0'/" + account + "'/"+is_change+"/"+address_index;
-    console.log('THIS: ' + JSON.stringify(this));
 	const privateKey = this.xPrivateKey.derive(path).privateKey;
     const privKeyBuf = privateKey.bn.toBuffer({size:32}); // https://github.com/bitpay/bitcore-lib/issues/47
     handleSig(this.ecdsaSig.sign(text_to_sign, privKeyBuf));
@@ -196,6 +195,19 @@ Signer.prototype.findAddress = function (address, signing_path, callbacks, fallb
             );
         }
     );
-}
+};
+
+/**
+ /**
+ * Verifies an hash signed with a private key
+ * @param hash Some hash to be compared
+ * @param b64_sig The hash signature (generated using a private key PrK)
+ * @param b64_pub_key The public key corresponding to PrK
+ *
+ * Returns true if the verification succeeded.
+ */
+Signer.prototype.verify = function(hash, b64_sig, b64_pub_key) {
+    return this.ecdsaSig.verify(hash, b64_sig, b64_pub_key);
+};
 
 module.exports = Signer;

@@ -267,6 +267,15 @@ AccountManager.prototype.sendPayment = function (toAddress, amount) {
     });
 };
 
+/**
+ * Takes all bytes from a shared address and sends them to the main address. It works only if the definition of the shared address
+ * allows full controls to the funding main address (shared address defined since October, 10th).
+ *
+ * The following definition allows BCS55XCV5RIJWXJWVGFLDRMWKKXRUVCS to control the shared address.
+ * ["or",[["address","BCS55XCV5RIJWXJWVGFLDRMWKKXRUVCS"],["and",[["address","BCS55XCV5RIJWXJWVGFLDRMWKKXRUVCS"],["address","4SQ5PP7Z7LYIDLOCXRPXXTR5M3K6L66I"]]]]]
+ * @param toBeEmptiedAddress A shared address to be emptied.
+ * @returns {*} A promise containing the generated payment joint or the rejection reason.
+ */
 AccountManager.prototype.emptySharedAddress = function (toBeEmptiedAddress) {
     const self = this;
 

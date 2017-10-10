@@ -38,4 +38,6 @@ exports.totalBytes =  100000;
 exports.bytesPerAddress = 10000;
 exports.maxEndUserCapacity = 10;
 
+exports.dagcoinAsset = 'j5brqzPhQ0H2VNYi3i59PmlV15p54yAiSzacrQ2KqQQ=';
+
 console.log('finished headless conf');

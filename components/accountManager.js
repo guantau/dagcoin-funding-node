@@ -267,4 +267,44 @@ AccountManager.prototype.sendPayment = function (toAddress, amount) {
     });
 };
 
+AccountManager.prototype.emptySharedAddress = function (toBeEmptiedAddress) {
+    const self = this;
+
+    const signer = self.getSigner();
+
+    if(!signer) {
+        return Promise.reject('THE SIGNER IS NOT DEFINED. USE THIS METHOD ONLY AFTER LOADING THE ACCOUNT WITH readAccount');
+    }
+
+    return self.walletManager.readSingleAddress().then((toAddress) => {
+        return new Promise((resolve, reject) => {
+            const onError = (err) => {
+                reject(`COULD NOT DELIVER ${amount} BYTES TO ${toAddress} BECAUSE: ${err}`);
+            };
+
+            const callbacks = self.composer.getSavingCallbacks({
+                ifNotEnoughFunds: onError,
+                ifError: onError,
+                ifOk: function(objJoint){
+                    self.network.broadcastJoint(objJoint);
+                    resolve(objJoint);
+                }
+            });
+
+            var arrOutputs = [
+                {address: toAddress, amount: 0}  // the receiver
+            ];
+
+            self.composer.composeJoint({
+				send_all: true,
+				paying_addresses: [toBeEmptiedAddress],
+                shared_addresses: [toBeEmptiedAddress],
+				outputs: arrOutputs,
+				signer: signer,
+				callbacks: callbacks
+            });
+        });
+    });
+}
+
 module.exports = AccountManager;

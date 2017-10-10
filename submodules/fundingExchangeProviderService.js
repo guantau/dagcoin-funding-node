@@ -196,7 +196,21 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
 
             console.log(`MY ADDRESS: ${myAddress}`);
 
-            const addressDefinitionTemplate = JSON.parse(`["and", [["address", "$address@${myDeviceAddress}"], ["address", "$address@${remoteDeviceAddress}"]]]`);
+            const addressDefinitionTemplate = JSON.parse(`
+                [
+                    "or",
+                    [
+                        ["address", "$address@${myDeviceAddress}"],
+                        [
+                            "and", [
+                                ["address", "$address@${myDeviceAddress}"],
+                                ["address", "$address@${remoteDeviceAddress}"]
+                            ]
+                        ]
+                    ]
+                ]
+            `);
+
             const definitionTemplaceHash = this.objectHash.getChash160(addressDefinitionTemplate);
 
             // CHECK IN THE PENDING TABLES
@@ -422,21 +436,45 @@ FundingExchangeProvider.prototype.handleSharedPaymentRequest = function () {
                         // var question = 'Sign transaction spending '+dest+' from wallet '+wallet_id+'?';
                         // console.log(question);
 
-                        console.log(JSON.stringify(assocAmountByAssetAndAddress));
-                        console.log(self.dagcoinDestination);
-                        console.log(JSON.stringify(assocAmountByAssetAndAddress[self.conf.dagcoinAsset][self.dagcoinDestination]));
+                        console.log(`ASSOCIATED AMOUNTS BY ASSET AND ADDRESS ${JSON.stringify(assocAmountByAssetAndAddress)}`);
+                        console.log(`DAGCOIN DESTINATION: ${self.dagcoinDestination}`);
+                        console.log(`DAGCOIN AMOUNT TO DESTINATION: ${JSON.stringify(assocAmountByAssetAndAddress[self.conf.dagcoinAsset][self.dagcoinDestination])}`);
 
-                        if (assocAmountByAssetAndAddress[self.conf.dagcoinAsset][self.dagcoinDestination] >= 1000) {
+                        let approve = true;
+
+                        // The service fee must be present and equal to 500 microdags.
+                        if (
+                            !assocAmountByAssetAndAddress[self.conf.dagcoinAsset]
+                            || !assocAmountByAssetAndAddress[self.conf.dagcoinAsset][self.dagcoinDestination]
+                            || assocAmountByAssetAndAddress[self.conf.dagcoinAsset][self.dagcoinDestination] !== 500
+                        ) {
+                            approve = false;
+                        }
+
+                        for(let asset in assocAmountByAssetAndAddress) {
+                            // No asset transfer other than dagcoin, bytes or blackbytes can be listed in the transaction
+                            if (asset !== self.conf.dagcoinAsset && asset !== 'base' && asset !== 'blackbytes') {
+                                approve = false;
+                            }
+
+                            // No bytes nor blackbytes can be actively transfered. Only passively (fee payment from the shared address)
+                            if (asset === 'base' || asset === 'blackbytes') {
+                                if(assocAmountByAssetAndAddress[asset].length > 0) {
+                                    approve = false;
+                                }
+                            }
+                        }
+
+                        if (approve) {
                             //APPROVED if there is an output to the base address of some dagcoins
                             createAndSendSignature();
                             assocChoicesByUnit[unit] = "approve";
-                            unlock();
                         } else { //NOT APPROVED
-                            console.log("===== NO CLICKED");
                             refuseSignature();
                             assocChoicesByUnit[unit] = "refuse";
-                            unlock();
                         }
+
+                        unlock();
                     }
                 ); // eachSeries
             });

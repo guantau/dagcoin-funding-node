@@ -14,9 +14,11 @@ endif
 
 dev:
 	$(SHELLCMD) scripts/prepare.sh development
+	$(SHELLCMD) scripts/testnetify.sh
 
 test:
 	$(SHELLCMD) scripts/prepare.sh testnet
+	$(SHELLCMD) scripts/testnetify.sh
 
 live:
 	$(SHELLCMD) scripts/prepare.sh live

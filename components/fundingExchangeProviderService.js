@@ -61,6 +61,19 @@ FundingExchangeProvider.prototype.activate = function () {
                 }
             );
         });
+
+        self.eventBus.on('dagcoin.request.link-address', (message, deviceAddress) => {
+            console.log(`REQUEST TO LINK AN ADDRESS FROM ${deviceAddress}: ${JSON.stringify(message)}`);
+
+            self.linkAddress(deviceAddress, message).then(
+                () => {
+                    console.log(`NEW SHARED ADDRESS CREATED: ${sharedAddress}`);
+                },
+                (err) => {
+                    console.log(`COULD NOT CREATE A SHARED ADDRESS: ${err}`);
+                }
+            );
+        });
     });
 };
 
@@ -142,6 +155,10 @@ FundingExchangeProvider.prototype.initDagcoinDestination = function () {
             });
         });
     });
+};
+
+FundingExchangeProvider.prototype.linkAddress = function () {
+    throw "Not yet implemented";
 };
 
 FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAddress, message) {

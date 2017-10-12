@@ -462,7 +462,7 @@ FundingExchangeProvider.prototype.handleSharedPaymentRequest = function () {
                         if (
                             !assocAmountByAssetAndAddress[self.conf.dagcoinAsset]
                             || !assocAmountByAssetAndAddress[self.conf.dagcoinAsset][self.dagcoinDestination]
-                            || assocAmountByAssetAndAddress[self.conf.dagcoinAsset][self.dagcoinDestination] < 500
+                            || assocAmountByAssetAndAddress[self.conf.dagcoinAsset][self.dagcoinDestination] < self.conf.exchangeFee
                         ) {
                             approve = false;
                         }

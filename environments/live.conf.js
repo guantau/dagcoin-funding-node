@@ -1,6 +1,8 @@
 /*jslint node: true */
 "use strict";
 
+exports.environment='live';
+
 //exports.port = 6611;
 //exports.myUrl = 'wss://mydomain.com/bb';
 exports.bServeAsHub = false;

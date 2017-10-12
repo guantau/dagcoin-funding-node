@@ -8,6 +8,9 @@ const AccountManager = require('./components/accountManager');
 const accountManager = new AccountManager();
 let fundingExchangeProvider = null;
 
+const DatabaseManager = require('./components/databaseManager');
+const dbManager = new DatabaseManager();
+
 const fundsNeedingAddresses = new Array();
 
 if (conf.permanent_pairing_secret)
@@ -37,7 +40,7 @@ function setupChatEventHandlers() {
 
         const device = require('byteballcore/device.js');
 
-        const DiscoveryService = require('./submodules/discoveryService');
+        const DiscoveryService = require('./components/discoveryService');
         const discoveryService = new DiscoveryService();
 
         discoveryService.getCorrespondent(fromAddress).then((correspondent) => {
@@ -231,38 +234,40 @@ function fundSharedAddresses() {
     });
 }
 
-setTimeout(function () {
-    accountManager.readAccount().then(
-        () => {
-            try {
-                setupChatEventHandlers();
+dbManager.checkOrUpdateDatabase().then(() => {
+    setTimeout(function () {
+        accountManager.readAccount().then(
+            () => {
+                try {
+                    setupChatEventHandlers();
 
-                console.log('WHAT');
+                    console.log('WHAT');
 
-                const FundingExchangeProvider = require('./submodules/fundingExchangeProviderService');
-                console.log('HANDLERS ARE UP');
-                fundingExchangeProvider = new FundingExchangeProvider(accountManager.getPairingCode(), accountManager.getPrivateKey());
-                fundingExchangeProvider
-                    .activate()
-                    .then(() => {
-                        console.log('COMPLETED ACTIVATION ... UPDATING SETTINGS');
-                        return fundingExchangeProvider.updateSettings()
-                    }).catch(err => {
-                    console.log(err);
-                });
+                    const FundingExchangeProvider = require('./components/fundingExchangeProviderService');
+                    console.log('HANDLERS ARE UP');
+                    fundingExchangeProvider = new FundingExchangeProvider(accountManager.getPairingCode(), accountManager.getPrivateKey());
+                    fundingExchangeProvider
+                        .activate()
+                        .then(() => {
+                            console.log('COMPLETED ACTIVATION ... UPDATING SETTINGS');
+                            return fundingExchangeProvider.updateSettings()
+                        }).catch(err => {
+                        console.log(err);
+                    });
 
-                fundingExchangeProvider.handleSharedPaymentRequest();
+                    fundingExchangeProvider.handleSharedPaymentRequest();
 
-                setInterval(fundSharedAddresses, 60 * 1000);
-            } catch (e) {
-                console.log(e);
+                    setInterval(fundSharedAddresses, 60 * 1000);
+                } catch (e) {
+                    console.log(e);
+                    process.exit();
+                }
+            },
+            (err) => {
+                console.log(`COULD NOT START: ${err}`);
                 process.exit();
             }
-        },
-        (err) => {
-            console.log(`COULD NOT START: ${err}`);
-            process.exit();
-        }
-    );
-    fund();
-}, 1000);
+        );
+        fund();
+    }, 1000);
+});

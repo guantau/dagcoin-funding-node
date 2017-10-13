@@ -1,6 +1,6 @@
 'use strict';
 function DiscoveryService() {
-    const FileSystem = require('./fileSystem');
+    const FileSystem = require('./fileSystemManager');
 
     this.conf = require('byteballcore/conf.js');
     this.discoveryServicePairingCode = this.conf.discoveryServicePairingCode;

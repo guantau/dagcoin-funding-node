@@ -6,6 +6,7 @@
 exports.bServeAsHub = false;
 exports.bLight = true;
 
+exports.environment='test';
 
 exports.storage = 'sqlite';
 

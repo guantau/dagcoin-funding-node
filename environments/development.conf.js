@@ -1,6 +1,8 @@
 /*jslint node: true */
 "use strict";
 
+exports.environment='dev';
+
 //exports.port = 6611;
 //exports.myUrl = 'wss://mydomain.com/bb';
 exports.bServeAsHub = false;
@@ -20,9 +22,9 @@ exports.KEYS_FILENAME = 'keys.json';
 // Testnet on PowerEdge
 // exports.discoveryServicePairingCode = 'ApwhbsSyD7cF22UWxlZyH53y1vLpjsPk5gu4AW7AIdq0@byteball.org/bb-test#0000';
 // Yary's public testnet server
-exports.discoveryServicePairingCode = 'AhHZrVJAABB2fVTbO2CNZjvXjUi0QwaazL1uy5OMbn5O@byteball.org/bb-test#0000';
+// exports.discoveryServicePairingCode = 'AhHZrVJAABB2fVTbO2CNZjvXjUi0QwaazL1uy5OMbn5O@byteball.org/bb-test#0000';
 // Local to Yary's machine
-// exports.discoveryServicePairingCode = 'A8EImXA5RtFDBstX3u1CzcVmcKm8jmBBYlMm93FAHQ0z@byteball.org/bb-test#0000';
+exports.discoveryServicePairingCode = 'A8EImXA5RtFDBstX3u1CzcVmcKm8jmBBYlMm93FAHQ0z@byteball.org/bb-test#0000';
 
 // where logs are written to (absolute path).  Default is log.txt in app data directory
 //exports.LOG_FILENAME = '/dev/null';

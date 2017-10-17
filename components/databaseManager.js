@@ -49,8 +49,9 @@ DatabaseManager.prototype.checkOrUpdateDatabase = function () {
     }).catch((error) => {
         console.log(`FAILED CHECKING/UPDATING THE DATABASE: ${error}`);
         console.log(`STRINGIFIED ERROR: ${JSON.stringify(error)}`);
+        process.exit();
     });
-}
+};
 
 DatabaseManager.prototype.getDatabaseDirPath = function () {
     return this.fileSystemManager.getAppDataDir();

@@ -18,9 +18,8 @@ exports.up = function (db) {
     try {
         return db.createTable('dagcoin_linked_addresses',
             {
-                id: {type: 'bigint', primaryKey: true},
                 shared_address: {type: 'char', length: 32},
-                remote_address: {type: 'char', length: 32},
+                master_address: {type: 'char', length: 32},
                 linked_address: {type: 'char', length: 32}
             }
         );

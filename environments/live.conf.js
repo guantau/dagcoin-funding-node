@@ -43,4 +43,6 @@ exports.maxEndUserCapacity = 10;
 exports.passPhrase = '123';
 exports.dagcoinAsset = 'j5brqzPhQ0H2VNYi3i59PmlV15p54yAiSzacrQ2KqQQ=';
 
+exports.MIN_PAYMENT_DELAY = 30 * 1000;
+
 console.log('finished headless conf');

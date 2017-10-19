@@ -161,9 +161,12 @@ exports.PromiseEnqueuer = function (execute, minimumDelay) {
         enqueue: function () {
             const resolver = {};
 
-            const promise = new Promise((resolve) => {
+            const promise = new Promise((resolve, reject) => {
                 resolver.processResult = (result) => {
                     resolve(result);
+                };
+                resolver.onError = (error) => {
+                    reject(error);
                 }
             });
 
@@ -214,9 +217,16 @@ exports.PromiseEnqueuer = function (execute, minimumDelay) {
                 promise = self.execute();
             }
 
-            return promise.then((result) =>{
-                resolver.processResult(result);
-
+            return promise.then(
+                (result) => {
+                    resolver.processResult(result);
+                    return Promise.resolve();
+                },
+                (error) => {
+                    resolver.onError(error);
+                    return Promise.resolve();
+                }
+            ).then(() => {
                 if(!self.minimumDelay) {
                     self.free();
                 } else {

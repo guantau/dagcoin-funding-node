@@ -11,6 +11,11 @@ let fundingExchangeProvider = null;
 const DatabaseManager = require('./components/databaseManager');
 const dbManager = new DatabaseManager();
 
+const ProofManager = require('./components/proofManager');
+const proofManager = new ProofManager();
+
+const promiseManager = require('./components/promiseManager');
+
 const fundsNeedingAddresses = new Array();
 
 if (conf.permanent_pairing_secret)
@@ -148,7 +153,7 @@ function fund() {
                 }
             );
         });
-    }).then((remoteOwningAddress) => {
+    }).then((remoteOwningAddress) => { // TODO: rewrite from here on. Should not wait here, should return fund and execute globally inside a loop
         return new Promise((resolve, reject) => {
             const http = require('http');
 
@@ -234,40 +239,60 @@ function fundSharedAddresses() {
     });
 }
 
+function loadFirstFundingAddress () {
+    let fundingAddressFsm;
+    dbManager.query(
+        `SELECT 
+            shared_address, master_address, master_device_address, definition_type, status, created, last_status_change, previous_status
+        FROM dagcoin_funding_addresses`, []
+    ).then((rows) => {
+        fundingAddressFsm = require('./components/machines/fundingAddress/fundingAddress')(rows[0]);
+        console.log(fundingAddressFsm.getCurrentState().getName());
+        return fundingAddressFsm.recursivePingSafe();
+    }).then(() => {
+        console.log(fundingAddressFsm.getCurrentState().getName());
+    });
+}
+
 dbManager.checkOrUpdateDatabase().then(() => {
-    setTimeout(function () {
-        accountManager.readAccount().then(
-            () => {
-                try {
-                    setupChatEventHandlers();
+    loadFirstFundingAddress();
 
-                    console.log('WHAT');
+    /* accountManager.readAccount().then(
+        () => {
+            try {
+                setupChatEventHandlers();
 
-                    const FundingExchangeProvider = require('./components/fundingExchangeProviderService');
-                    console.log('HANDLERS ARE UP');
-                    fundingExchangeProvider = new FundingExchangeProvider(accountManager.getPairingCode(), accountManager.getPrivateKey());
-                    fundingExchangeProvider
-                        .activate()
-                        .then(() => {
-                            console.log('COMPLETED ACTIVATION ... UPDATING SETTINGS');
-                            return fundingExchangeProvider.updateSettings()
-                        }).catch(err => {
-                        console.log(err);
-                    });
+                console.log('WHAT');
 
-                    fundingExchangeProvider.handleSharedPaymentRequest();
+                const FundingExchangeProvider = require('./components/fundingExchangeProviderService');
+                console.log('HANDLERS ARE UP');
+                fundingExchangeProvider = new FundingExchangeProvider(accountManager.getPairingCode(), accountManager.getPrivateKey());
+                fundingExchangeProvider
+                    .activate()
+                    .then(() => {
+                        console.log('COMPLETED ACTIVATION ... UPDATING SETTINGS');
+                        return fundingExchangeProvider.updateSettings()
+                    }).catch(err => {
+                    console.log(err);
+                });
 
-                    setInterval(fundSharedAddresses, 60 * 1000);
-                } catch (e) {
-                    console.log(e);
-                    process.exit();
-                }
-            },
-            (err) => {
-                console.log(`COULD NOT START: ${err}`);
+                fundingExchangeProvider.handleSharedPaymentRequest();
+
+                setInterval(fundSharedAddresses, 60 * 1000);
+
+                // SETTING UP THE LOOPS
+                require('./components/routines/evaluateProofs').start(5 * 1000, 60 * 1000);
+                require('./components/routines/transferSharedAddressesToFundingTable').start(10 * 1000, 60 * 1000);
+            } catch (e) {
+                console.log(e);
                 process.exit();
             }
-        );
-        fund();
-    }, 1000);
+        },
+        (err) => {
+            console.log(`COULD NOT START: ${err}`);
+            process.exit();
+        }
+    );
+
+    fund();*/
 });

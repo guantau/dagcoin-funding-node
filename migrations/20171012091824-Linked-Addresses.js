@@ -20,7 +20,9 @@ exports.up = function (db) {
             {
                 shared_address: {type: 'char', length: 32},
                 master_address: {type: 'char', length: 32},
-                linked_address: {type: 'char', length: 32}
+                linked_address: {type: 'char', length: 32},
+                device_address: {type: 'char', length: 33},
+                proofed: {type: 'boolean'}
             }
         );
     } catch (e) {

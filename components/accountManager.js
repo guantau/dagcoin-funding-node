@@ -267,6 +267,24 @@ AccountManager.prototype.sendPayment = function (toAddress, amount) {
     });
 };
 
+AccountManager.prototype.sendPaymentOrWait = function (toAddress, amount) {
+	const self = this;
+
+	if (self.paymentOngoing) {
+		return self.paymentWaitingPromise.then();
+	}
+
+	self.paymentOngoing = true;
+
+	return this.sendPayment(toAddress, amount).then((result) => {
+        self.paymentWaitingPromise = new Promise((resolve) => {
+            setTimeout(resolve, 30 * 1000);
+		});
+
+        return Promise.resolve(result);
+	});
+};
+
 /**
  * Takes all bytes from a shared address and sends them to the main address. It works only if the definition of the shared address
  * allows full controls to the funding main address (shared address defined since October, 10th).

@@ -18,13 +18,13 @@ exports.up = function(db) {
     try {
         return db.createTable('dagcoin_proofs',
             {
-                linked_address: {type: 'char', length: 32},
-                linked_address_definition: {type: 'string'},
-                linked_address_signature: {type: 'string'},
-                master_address: {type: 'char', length: 32},
-                master_address_definition: {type: 'string'},
+                address: {type: 'char', length: 32},
+                address_definition: {type: 'string'},
+                device_address_signature: {type: 'string'},
+                master_address: {type: 'string', length: 32},
                 master_address_signature: {type: 'string'},
-                device_address: {type: 'char', length: 33}
+                device_address: {type: 'char', length: 33},
+                proofed: {type: 'boolean'}
             }
         );
     } catch (e) {

@@ -74,7 +74,7 @@ WalletManager.prototype.create = function(xPrivKey) {
 		self.device.setDevicePrivateKey(devicePrivKey); // we need device address before creating a wallet
 		var strXPubKey = self.Bitcore.HDPublicKey(xPrivKey.derive("m/44'/0'/0'")).toString();
 
-		self.walletDefinedByKeys.createWalletByDevices(strXPubKey, 0, 1, [], 'any walletName', function(walletId){
+		self.walletDefinedByKeys.createWalletByDevices(strXPubKey, 0, 1, [], 'any walletName', true, function(walletId){
 			console.log(`WALLET CREATED WITH ID: ${walletId}`);
 			self.walletId = walletId;
 			resolve(walletId);

@@ -26,7 +26,6 @@ module.exports = function (properties) {
         ).then((rows) => {
             const assocBalances = {};
 
-
             assocBalances["base"] = {stable: 0, pending: 0, total: 0};
 
             for (let i = 0; i < rows.length; i++) {

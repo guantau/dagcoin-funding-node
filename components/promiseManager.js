@@ -153,11 +153,19 @@ exports.loopMethod = function (tag, sleepTime, method) {
     );
 };
 
-exports.PromiseEnqueuer = function (execute, minimumDelay) {
+exports.PromiseEnqueuer = function (name, execute, minimumDelay, repeatUntilSuccess) {
     return {
+        name,
         promiseQueue: [],
         minimumDelay,
         execute,
+        repeatUntilSuccess,
+        promiseId: 0,
+        nextPromiseId: function () {
+            const nextPromiseId = this.promiseId;
+            this.promiseId += 1;
+            return nextPromiseId;
+        },
         enqueue: function () {
             const resolver = {};
 
@@ -170,7 +178,7 @@ exports.PromiseEnqueuer = function (execute, minimumDelay) {
                 }
             });
 
-            this.promiseQueue.push({arguments, resolver});
+            this.promiseQueue.push({arguments, resolver, promiseId: this.nextPromiseId()});
 
             this.resolve();
 
@@ -182,16 +190,15 @@ exports.PromiseEnqueuer = function (execute, minimumDelay) {
         },
         lock: function () {
             if (this.promiseQueue.length === 0) {
-                console.log('FREE');
+                console.log(`PROMISE QUEUE ${this.name} IS FREE`);
                 return;
             }
 
             if(this.executing) {
-                console.log('BUSY');
+                console.log(`PROMISE QUEUE ${this.name} IS BUSY`);
                 return;
             }
 
-            console.log('EXECUTING');
             this.executing = true;
 
             //console.log(this.promiseQueue[this.promiseQueue.length - 1]);
@@ -211,6 +218,8 @@ exports.PromiseEnqueuer = function (execute, minimumDelay) {
 
             let promise = null;
 
+            console.log(`PROMISE QUEUE ${self.name} EXECUTING NOW ${promiseDefinition.promiseId}`);
+
             if (parameters) {
                 promise = self.execute(...parameters);
             } else {
@@ -223,7 +232,12 @@ exports.PromiseEnqueuer = function (execute, minimumDelay) {
                     return Promise.resolve();
                 },
                 (error) => {
-                    resolver.onError(error);
+                    if (!self.repeatUntilSuccess) {
+                        resolver.onError(error);
+                    } else {
+                        console.log(`WHILE RESOLVING A SEQUENTIAL PROMISE: ${error}. `);
+                        this.promiseQueue.push(promiseDefinition);
+                    }
                     return Promise.resolve();
                 }
             ).then(() => {

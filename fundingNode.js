@@ -248,7 +248,18 @@ function loadFirstFundingAddress () {
     ).then((rows) => {
         fundingAddressFsm = require('./components/machines/fundingAddress/fundingAddress')(rows[0]);
         console.log(fundingAddressFsm.getCurrentState().getName());
-        return fundingAddressFsm.recursivePingSafe();
+        accountManager.readAccount().then(() => {
+            for (let i = 0; i < 10; i++ ) {
+                try {
+                    accountManager.sendPaymentSequentially(rows[0].shared_address, 100).catch((e) => {
+                        console.error(e, e.stack);
+                    });
+                } catch (e) {
+                    console.error(e, e.stack);
+                }
+            }
+        });
+        return fundingAddressFsm.pingUntilOver(false);
     }).then(() => {
         console.log(fundingAddressFsm.getCurrentState().getName());
     });
@@ -257,7 +268,7 @@ function loadFirstFundingAddress () {
 dbManager.checkOrUpdateDatabase().then(() => {
     loadFirstFundingAddress();
 
-    /* accountManager.readAccount().then(
+    accountManager.readAccount().then(
         () => {
             try {
                 setupChatEventHandlers();
@@ -284,7 +295,7 @@ dbManager.checkOrUpdateDatabase().then(() => {
                 require('./components/routines/evaluateProofs').start(5 * 1000, 60 * 1000);
                 require('./components/routines/transferSharedAddressesToFundingTable').start(10 * 1000, 60 * 1000);
             } catch (e) {
-                console.log(e);
+                console.error(e, e.stack);
                 process.exit();
             }
         },
@@ -294,5 +305,5 @@ dbManager.checkOrUpdateDatabase().then(() => {
         }
     );
 
-    fund();*/
+    fund();
 });

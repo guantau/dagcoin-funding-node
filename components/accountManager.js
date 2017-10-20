@@ -9,7 +9,6 @@ function AccountManager() {
     self.crypto = require('crypto');
     self.desktopApp = require('byteballcore/desktop_app.js');
     self.device = require('byteballcore/device.js');
-    self.db = require('byteballcore/db.js');
     self.eventBus = require('byteballcore/event_bus');
     self.util = require('util');
     self.network = require('byteballcore/network');
@@ -17,6 +16,9 @@ function AccountManager() {
     self.composer = require('byteballcore/composer.js');
 
     self.applicationDataDirectory = this.desktopApp.getAppDataDir();
+
+    const DatabaseManager = require('./databaseManager');
+    self.dbManager = new DatabaseManager();
 
     const ConfManager = require('./confManager');
     self.confManager = new ConfManager();
@@ -34,9 +36,18 @@ function AccountManager() {
 
     this.timedPromises = require('./promiseManager');
 
-    self.paymentQueue = self.timedPromises.PromiseEnqueuer((toAddress, amount) => {
-        return self.sendPayment(toAddress, amount);
-    }, self.conf.MIN_PAYMENT_DELAY);
+    self.paymentQueue = self.timedPromises.PromiseEnqueuer(
+        'payments',
+        (toAddress, amount) => {
+            return self.walletManager.readSingleAddress().then((fromAddress) => {
+                return self.checkThereAreStableBytes(fromAddress);
+            }).then(() => {
+                return self.sendPayment(toAddress, amount);
+            });
+        },
+        self.conf.MIN_PAYMENT_DELAY,
+        true
+    );
 
     console.log(`MINIMUM PAYMENT DELAY SET TO ${self.conf.MIN_PAYMENT_DELAY} ms`);
 }
@@ -103,23 +114,6 @@ AccountManager.prototype.getPairingCode = function () {
     return this.pairigCode;
 };
 
-AccountManager.prototype.replaceConsoleLog = function () {
-    const self = this;
-
-    var log_filename = self.conf.LOG_FILENAME || (`${self.applicationDataDirectory}/log.txt`);
-    var writeStream = self.fs.createWriteStream(log_filename);
-
-    console.log('---------------');
-    console.log('From this point, output will be redirected to ' + log_filename);
-    console.log("To release the terminal, type Ctrl-Z, then 'bg'");
-    console.log = function () {
-        writeStream.write(Date().toString() + ': ');
-        writeStream.write(self.util.format.apply(null, arguments) + '\n');
-    };
-    console.warn = console.log;
-    console.info = console.log;
-}
-
 AccountManager.prototype.readAccount = function () {
     const self = this;
 
@@ -139,7 +133,7 @@ AccountManager.prototype.readAccount = function () {
         (data) => {
             self.keys = JSON.parse(data);
 
-            var mnemonic = new self.Mnemonic(self.keys.mnemonic_phrase);
+            const mnemonic = new self.Mnemonic(self.keys.mnemonic_phrase);
             self.xPrivKey = mnemonic.toHDPrivateKey(self.passPhrase);
             self.signer = new self.Signer(self.xPrivKey);
 
@@ -168,22 +162,23 @@ AccountManager.prototype.readAccount = function () {
 
         self.walletId = walletId;
 
-        var devicePrivKey = self.getPrivateKey().derive("m/1'").privateKey.bn.toBuffer({size: 32});
+        const devicePrivKey = self.getPrivateKey().derive("m/1'").privateKey.bn.toBuffer({size: 32});
         self.device.setDevicePrivateKey(devicePrivKey);
         self.myDeviceAddress = self.device.getMyDeviceAddress();
 
-        return new Promise((resolve, reject) => {
-            self.db.query("SELECT 1 FROM extended_pubkeys WHERE device_address=?", [self.myDeviceAddress], function (rows) {
-                if (rows.length > 1) {
-                    reject("MORE THAN ONE extended_pubkey?!?");
-                } else if (rows.length === 0) {
-                    setTimeout(function () {
-                        reject('THE PASSPHRASE IS INCORRECT');
-                    }, 1000);
-                } else {
-                    resolve();
-                }
-            });
+        self.dbManager.query(
+            "SELECT 1 FROM extended_pubkeys WHERE device_address=?",
+            [self.myDeviceAddress]
+        ).then((rows) => {
+            if (rows.length > 1) {
+                return Promise.reject("MORE THAN ONE extended_pubkey?!?");
+            } else if (rows.length === 0) {
+                setTimeout(function () {
+                    return Promise.reject('THE PASSPHRASE IS INCORRECT');
+                }, 1000);
+            } else {
+                return Promise.resolve();
+            }
         });
     }).then(() => {
         require('byteballcore/wallet.js'); // we don't need any of its functions but it listens for hubmessages
@@ -194,8 +189,8 @@ AccountManager.prototype.readAccount = function () {
         const deviceTempPrivKey = Buffer(keys.temp_priv_key, 'base64');
         const devicePrevTempPrivKey = Buffer(keys.prev_temp_priv_key, 'base64');
 
-        var saveTempKeys = function (new_temp_key, new_prev_temp_key, onDone) {
-            var processedKeys = {
+        const saveTempKeys = function (new_temp_key, new_prev_temp_key, onDone) {
+            const processedKeys = {
                 mnemonic_phrase: mnemonic_phrase,
                 temp_priv_key: deviceTempPrivKey.toString('base64'),
                 prev_temp_priv_key: devicePrevTempPrivKey.toString('base64')
@@ -217,7 +212,7 @@ AccountManager.prototype.readAccount = function () {
         }
 
         if (self.conf.bLight) {
-            var light_wallet = require('byteballcore/light_wallet.js');
+            const light_wallet = require('byteballcore/light_wallet.js');
             light_wallet.setLightVendorHost(self.conf.hub);
         }
 
@@ -266,8 +261,8 @@ AccountManager.prototype.sendPayment = function (toAddress, amount) {
             });
 
             // i.e.: "LS3PUAGJ2CEYBKWPODVV72D3IWWBXNXO"
-            var payee_address = toAddress;
-            var arrOutputs = [
+            const payee_address = toAddress;
+            const arrOutputs = [
                 {address: fromAddress, amount: 0},      // the change
                 {address: payee_address, amount: amount}  // the receiver
             ];
@@ -278,7 +273,53 @@ AccountManager.prototype.sendPayment = function (toAddress, amount) {
 };
 
 AccountManager.prototype.sendPaymentSequentially = function (toAddress, amount) {
+    console.log(`ENQUEUEING A NEW PAYMENT TO ${toAddress} OF ${amount} BYTES`);
     return this.paymentQueue.enqueue(toAddress, amount);
+};
+
+AccountManager.prototype.checkThereAreStableBytes = function (fromAddress) {
+    const self = this;
+
+    console.log(`CHECKING HOW MANY BYTES ARE STABLE ON THE MAIN FUNDING ADDRESS (${fromAddress}) BEFORE MAKING A PAYMENT`);
+
+    return self.dbManager.query(
+        `SELECT asset, address, is_stable, SUM(amount) AS balance
+        FROM outputs CROSS JOIN units USING(unit)
+        WHERE is_spent=0 AND sequence='good' AND address = ?
+        GROUP BY asset, address, is_stable
+        UNION ALL
+        SELECT NULL AS asset, address, 1 AS is_stable, SUM(amount) AS balance FROM witnessing_outputs
+        WHERE is_spent=0 AND address = ? GROUP BY address
+        UNION ALL
+        SELECT NULL AS asset, address, 1 AS is_stable, SUM(amount) AS balance FROM headers_commission_outputs
+        WHERE is_spent=0 AND address = ? GROUP BY address`,
+        [fromAddress, fromAddress, fromAddress]
+    ).then((rows) => {
+        let totalStableAmount = 0;
+
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+
+            if (row.asset || !row.is_stable) {
+                continue;
+            }
+
+            totalStableAmount += row.balance;
+        }
+
+        if (totalStableAmount >= self.conf.MIN_STABLE_BYTES_ON_MAIN_BEFORE_FUNDING) {
+            console.log(`ENOUGH STABLE BYTES ON THE MAIN FUNDING NODE ADDRESS (${fromAddress}) FOR A PAYMENT`);
+            return Promise.resolve(true);
+        } else {
+            return new Promise((resolve) => {
+                console.log(`NOT ENOUGH STABLE BYTES ON ${fromAddress}. ` +
+                    `WAITING ${self.conf.MAIN_ADDRESS_FUNDS_INSPECTION_PERIOD} ms BEFORE CHECKING AGAIN ...`);
+                setTimeout(resolve, self.conf.MAIN_ADDRESS_FUNDS_INSPECTION_PERIOD);
+            }).then(() => {
+                return self.checkThereAreStableBytes(fromAddress);
+            });
+        }
+    });
 };
 
 /**
@@ -314,7 +355,7 @@ AccountManager.prototype.emptySharedAddress = function (toBeEmptiedAddress) {
                 }
             });
 
-            var arrOutputs = [
+            const arrOutputs = [
                 {address: toAddress, amount: 0}  // the receiver
             ];
 

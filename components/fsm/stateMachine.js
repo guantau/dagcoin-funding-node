@@ -282,8 +282,6 @@ StateMachine.prototype.recursivePing = function (transitions) {
 
     const self = this;
 
-    self.pinging = true;
-
     return self.ping().then((transitionOccurred) => {
         self.pinging = false;
 
@@ -295,29 +293,47 @@ StateMachine.prototype.recursivePing = function (transitions) {
     });
 };
 
-StateMachine.prototype.recursivePingSafe = function () {
+/**
+ *
+ * @param updatedInformation The requestor might ping after updating the database or reporting relevant change to the state machine while
+ * a previous test is currently ongoing (and is using or has used outdated information)
+ * In this case the transition test should be repeated in the end.
+ */
+StateMachine.prototype.pingUntilOver = function (updatedInformation) {
     const self = this;
 
-    if (!self.currentPingSession) {
-        self.currentPingSession = self.recursivePing().then((transitions) => {
-            if (self.pingRequestWhilePinging) {
-                self.pingRequestWhilePinging = false;
+    if (self.pinging) {
+        if (updatedInformation) {
+            self.updatedInformation = true;
+        }
 
-                self.currentPingSession = self.recursivePing();
-
-                return self.currentPingSession;
-            } else {
-                delete self.currentPingSession;
-                return Promise.resolve(transitions);
-            }
-        });
-
-        return self.currentPingSession;
-    } else {
-        self.pingRequestWhilePinging = true;
-
-        return self.currentPingSession;
+        return self.pingingPromise;
     }
+
+    self.pinging = true;
+
+    self.pingingPromise = self.recursivePing().then(
+        () => {
+            if (!self.updatedInformation) {
+                return Promise.resolve();
+            } else {
+                self.updatedInformation = false;
+                return self.recursivePing();
+            }
+        },
+        (error) => {
+            console.error(`SOMETHING WENT WRONG IN ${self.name} IN STATE ${self.currentState}: ${error}`);
+            return Promise.resolve();
+        }
+    ).then(() => {
+        self.pinging = false;
+        self.updatedInformation = false;
+        self.pingingPromise = null;
+
+        return Promise.resolve();
+    });
+
+    return self.pingingPromise;
 };
 
 StateMachine.prototype.getName = function () {

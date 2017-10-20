@@ -123,7 +123,7 @@ State.prototype.enable = function () {
             throw Error(`PROPERTY evaluationPeriod OF State ${self.name} IS SET BUT NOT A NUMBER. CHECK`);
         } else {
             self.evaluationIntervalId = setInterval(() => {
-                this.stateMachine.recursivePingSafe();
+                this.stateMachine.pingUntilOver(false);
             }, self.evaluationPeriod);
         }
     }
@@ -134,7 +134,7 @@ State.prototype.enable = function () {
         }
 
         self.listener = () => {
-            self.stateMachine.recursivePingSafe();
+            self.stateMachine.pingUntilOver(true);
         };
 
         self.listensTo.forEach((event) => {

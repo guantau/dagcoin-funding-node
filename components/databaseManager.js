@@ -11,11 +11,19 @@ function DatabaseManager() {
 
     const self = this;
 
-    this.queryQueue = this.timedPromises.PromiseEnqueuer((query, parameters) => {
-        return new Promise((resolve) => {
-            self.db.query(query, parameters, resolve);
-        });
-    });
+    this.queryQueue = this.timedPromises.PromiseEnqueuer(
+        'db-manager',
+        (query, parameters) => {
+            return new Promise((resolve, reject) => {
+                try {
+                    self.db.query(query, parameters, resolve);
+                } catch (e) {
+                    console.error(e, e.stack);
+                    reject(`QUERY ${query} WITH PARAMETER ${JSON.stringify(parameters)} FAILED: ${e.message}`);
+                }
+            });
+        }
+    );
 }
 
 DatabaseManager.prototype.checkOrUpdateDatabase = function () {

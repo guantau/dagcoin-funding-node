@@ -40,7 +40,7 @@ DagcoinProtocolManager.prototype.sendMessage = function (deviceAddress, messageT
 			messageBody
 		};
 
-		self.device.sendMessageToDevice(correspondent.device_address, 'text', JSON.stringify(message), {
+		self.device.sendMessageToDevice(deviceAddress, 'text', JSON.stringify(message), {
 			ifOk() {
 				resolve(message.id);
 			},
@@ -81,7 +81,11 @@ DagcoinProtocolManager.prototype.sendRequestAndListen = function (deviceAddress,
 		`DID NOT RECEIVE A REPLY FOR ${JSON.stringify(messageBody)}`
 	);
 
+    console.log(`SENDING REQUEST ${subject} TO ${deviceAddress}`);
+
     return this.sendMessage(deviceAddress, 'request', subject, messageBody, messageId).then(() => {
+        console.log(`LISTENING ${subject} FROM ${deviceAddress}`);
+
     	return listeningPromise;
 	});
 };

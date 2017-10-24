@@ -531,6 +531,8 @@ FundingExchangeProvider.prototype.proofAuthors = function(fromAddress, authors) 
 
     const authorAddressNeedsProofPromise = [];
 
+    debugger;
+
     for (let i = 0; i < authors.length; i++) {
         authorAddressNeedsProofPromise.push(self.proofManager.hasAddressProofInDb(authors[i].address, fromAddress));
     }
@@ -538,13 +540,17 @@ FundingExchangeProvider.prototype.proofAuthors = function(fromAddress, authors) 
     return Promise.all(authorAddressNeedsProofPromise).then((values) => {
         const addressesNeedingProofs = [];
 
+        console.log(`VALUES IN THE DB: ${JSON.stringify(values)}`);
+
         for (let i = 0; i < authors.length; i++) {
             if (!values[i]) {
                 addressesNeedingProofs.push(authors[i].address);
             }
         }
 
-        if(!addressesNeedingProofs || addressesNeedingProofs.length == 0) {
+        console.log(`ADDRESSES NEEDING PROOF: ${JSON.stringify(addressesNeedingProofs)}`);
+
+        if (!addressesNeedingProofs || addressesNeedingProofs.length == 0) {
             return Promise.resolve(null);
         }
 
@@ -556,7 +562,7 @@ FundingExchangeProvider.prototype.proofAuthors = function(fromAddress, authors) 
             if (proofs == null || proofs.length === 0) {
                 return Promise.reject(`NO PROOFS PROVIDED IN THE CLIENT RESPONSE FOR ${JSON.stringify(addressesNeedingProofs)}`);
             } else {
-                return Promise.resolve(proofs)
+                return Promise.resolve(proofs);
             }
         });
     }).then((proofs) => {
@@ -564,11 +570,7 @@ FundingExchangeProvider.prototype.proofAuthors = function(fromAddress, authors) 
     }).then(
         (result) => {
             console.log(`PROOF RESULT FOR ${fromAddress} ${JSON.stringify(authors)}: ${JSON.stringify(result)}`);
-            return Promise.resolve(result.invalidBatch.length > 0);
-        },
-        (error) => {
-            console.error(`NO PROOF PROVIDED FOR AUTHORS ${authors} BY ${fromAddress} BECAUSE: ${error}`);
-            return Promise.resolve(false);
+            return Promise.resolve(result.invalidBatch.length === 0);
         }
     );
 };

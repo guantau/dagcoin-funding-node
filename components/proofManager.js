@@ -173,8 +173,9 @@ ProofManager.prototype.hasAddressProofInDb = function (address, deviceAddress) {
 
     return new Promise((resolve, reject) => {
         self.db.query(
-            'SELECT proofed FROM dagcoin_proofs WHERE address = ? AND device_address = ?',
-            [address, deviceAddress],
+            'SELECT proofed FROM dagcoin_proofs WHERE address = ? AND device_address = ? ' +
+            'UNION SELECT 1 FROM shared_addresses WHERE shared_address = ?',
+            [address, deviceAddress, address],
             (rows) => {
                 if (!rows || rows.length === 0) {
                     resolve(false);

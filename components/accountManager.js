@@ -1,234 +1,239 @@
 'use strict';
 
 // My module
-function AccountManager () {
-	this.conf = require('byteballcore/conf.js');
-	this.fs = require('fs');
-	this.crypto = require('crypto');
-	this.desktopApp = require('byteballcore/desktop_app.js');
-	this.device = require('byteballcore/device.js');
-	this.db = require('byteballcore/db.js');
-	this.eventBus = require('byteballcore/event_bus');
-	this.util = require('util');
-	this.network = require('byteballcore/network');
-	this.consolidation = require('./consolidation');
-    this.composer = require('byteballcore/composer.js');
+function AccountManager() {
+    const self = this;
 
-	this.applicationDataDirectory = this.desktopApp.getAppDataDir();
+    self.conf = require('byteballcore/conf.js');
+    self.fs = require('fs');
+    self.crypto = require('crypto');
+    self.desktopApp = require('byteballcore/desktop_app.js');
+    self.device = require('byteballcore/device.js');
+    self.eventBus = require('byteballcore/event_bus');
+    self.util = require('util');
+    self.network = require('byteballcore/network');
+    self.consolidation = require('./consolidation');
+    self.composer = require('byteballcore/composer.js');
 
-	const ConfManager = require('./confManager');
-	this.confManager = new ConfManager();
+    self.applicationDataDirectory = this.desktopApp.getAppDataDir();
 
-	const KeyManager = require('./keyManager');
-	this.keyManager = new KeyManager();
+    const DatabaseManager = require('./databaseManager');
+    self.dbManager = new DatabaseManager();
 
-	const WalletManager = require('./walletManager');
-	this.walletManager = new WalletManager();
+    const ConfManager = require('./confManager');
+    self.confManager = new ConfManager();
 
-	this.Signer = require('./signer');
-	this.Mnemonic = require('bitcore-mnemonic');
+    const KeyManager = require('./keyManager');
+    self.keyManager = new KeyManager();
 
-	this.passPhrase = this.conf.passPhrase;
+    const WalletManager = require('./walletManager');
+    self.walletManager = new WalletManager();
+
+    self.Signer = require('./signer');
+    self.Mnemonic = require('bitcore-mnemonic');
+
+    self.passPhrase = self.conf.passPhrase;
+
+    this.timedPromises = require('./promiseManager');
+
+    self.paymentQueue = self.timedPromises.PromiseEnqueuer(
+        'payments',
+        (toAddress, amount) => {
+            return self.walletManager.readSingleAddress().then((fromAddress) => {
+                return self.checkThereAreStableBytes(fromAddress);
+            }).then(() => {
+                return self.sendPayment(toAddress, amount);
+            });
+        },
+        self.conf.MIN_PAYMENT_DELAY,
+        true
+    );
+
+    console.log(`MINIMUM PAYMENT DELAY SET TO ${self.conf.MIN_PAYMENT_DELAY} ms`);
 }
 
 AccountManager.prototype.createAccount = function () {
-	console.log('COULD NOT READ THE KEY FILE, IT NEEDS TO BE GENERATED');
-	const suggestedDeviceName = require('os').hostname() || 'Headless';
+    console.log('COULD NOT READ THE KEY FILE, IT NEEDS TO BE GENERATED');
+    const suggestedDeviceName = require('os').hostname() || 'Headless';
 
-	let deviceName = this.conf.deviceName;
+    let deviceName = this.conf.deviceName;
 
-	if (!deviceName) {
-		deviceName = suggestedDeviceName;
-	}
+    if (!deviceName) {
+        deviceName = suggestedDeviceName;
+    }
 
-	const self = this;
+    const self = this;
 
-	let mnemonic = new self.Mnemonic(); // generates new mnemonic
-	while (!self.Mnemonic.isValid(mnemonic.toString())){
-		mnemonic = new self.Mnemonic();
-	}
+    let mnemonic = new self.Mnemonic(); // generates new mnemonic
+    while (!self.Mnemonic.isValid(mnemonic.toString())) {
+        mnemonic = new self.Mnemonic();
+    }
 
-	return this.confManager.write({deviceName: deviceName}).then(() => {
-		self.deviceTempPrivKey = self.crypto.randomBytes(32);
-		self.devicePrevTempPrivKey = self.crypto.randomBytes(32);
-		self.mnemonicPhrase = mnemonic.phrase;
+    return this.confManager.write({deviceName: deviceName}).then(() => {
+        self.deviceTempPrivKey = self.crypto.randomBytes(32);
+        self.devicePrevTempPrivKey = self.crypto.randomBytes(32);
+        self.mnemonicPhrase = mnemonic.phrase;
 
-		self.keys = {
-			mnemonic_phrase: self.mnemonicPhrase,
-			temp_priv_key: self.deviceTempPrivKey.toString('base64'),
-			prev_temp_priv_key: self.devicePrevTempPrivKey.toString('base64')
-		};
+        self.keys = {
+            mnemonic_phrase: self.mnemonicPhrase,
+            temp_priv_key: self.deviceTempPrivKey.toString('base64'),
+            prev_temp_priv_key: self.devicePrevTempPrivKey.toString('base64')
+        };
 
-		return self.keyManager.write(self.keys);
-	}).then((keys) => {
-		console.log('KEYS CREATED');
-		self.xPrivKey = mnemonic.toHDPrivateKey(self.passPhrase);
-		self.signer = new self.Signer(self.xPrivKey);
+        return self.keyManager.write(self.keys);
+    }).then((keys) => {
+        console.log('KEYS CREATED');
+        self.xPrivKey = mnemonic.toHDPrivateKey(self.passPhrase);
+        self.signer = new self.Signer(self.xPrivKey);
 
-		console.log('SIGNER CREATED');
-		return self.walletManager.create(self.xPrivKey).then(() => {
-			console.log('RETURNING THE ACCOUNT');
-			return Promise.resolve(self);
-		});
-	});
+        console.log('SIGNER CREATED');
+        return self.walletManager.create(self.xPrivKey).then(() => {
+            console.log('RETURNING THE ACCOUNT');
+            return Promise.resolve(self);
+        });
+    });
 };
 
 AccountManager.prototype.getSigner = function () {
-	return this.signer;
+    return this.signer;
 };
 
 AccountManager.prototype.getKeys = function () {
-	return this.keys;
+    return this.keys;
 };
 
 AccountManager.prototype.getPassPhrase = function () {
-	return this.passPhrase;
+    return this.passPhrase;
 };
 
 AccountManager.prototype.getPrivateKey = function () {
-	return this.xPrivKey;
+    return this.xPrivKey;
 };
 
 AccountManager.prototype.getPairingCode = function () {
     return this.pairigCode;
 };
 
-AccountManager.prototype.replaceConsoleLog = function () {
-	const self = this;
-
-	var log_filename = self.conf.LOG_FILENAME || (`${self.applicationDataDirectory}/log.txt`);
-	var writeStream = self.fs.createWriteStream(log_filename);
-
-	console.log('---------------');
-	console.log('From this point, output will be redirected to '+log_filename);
-	console.log("To release the terminal, type Ctrl-Z, then 'bg'");
-	console.log = function(){
-		writeStream.write(Date().toString()+': ');
-		writeStream.write(self.util.format.apply(null, arguments) + '\n');
-	};
-	console.warn = console.log;
-	console.info = console.log;
-}
-
 AccountManager.prototype.readAccount = function () {
-	const self = this;
+    const self = this;
 
-	console.log('-----------------------');
+    console.log('-----------------------');
 
-	if (self.conf.control_addresses) {
-		console.log(`REMOTE ACCESS ALLOWED FROM DEVICES: ${self.conf.control_addresses.join(', ')}`);
-	}
+    if (self.conf.control_addresses) {
+        console.log(`REMOTE ACCESS ALLOWED FROM DEVICES: ${self.conf.control_addresses.join(', ')}`);
+    }
 
-	if (self.conf.payout_address) {
-		console.log(`PAYOUTS ALLOWED TO DEVICED: ${self.conf.payout_address}`);
-	}
+    if (self.conf.payout_address) {
+        console.log(`PAYOUTS ALLOWED TO DEVICED: ${self.conf.payout_address}`);
+    }
 
-	console.log('-----------------------');
+    console.log('-----------------------');
 
-	return self.keyManager.read().then(
-		(data) => {
-			self.keys = JSON.parse(data);
+    return self.keyManager.read().then(
+        (data) => {
+            self.keys = JSON.parse(data);
 
-			var mnemonic = new self.Mnemonic(self.keys.mnemonic_phrase);
-			self.xPrivKey = mnemonic.toHDPrivateKey(self.passPhrase);
-			self.signer = new self.Signer(self.xPrivKey);
+            const mnemonic = new self.Mnemonic(self.keys.mnemonic_phrase);
+            self.xPrivKey = mnemonic.toHDPrivateKey(self.passPhrase);
+            self.signer = new self.Signer(self.xPrivKey);
 
-			return self.walletManager.exists().then((doesExist) => {
-				if(doesExist) {
-					return Promise.resolve(self);
-				} else {
-					return self.walletManager.create(self.xPrivKey).then(() => {
-						return Promise.resolve(self);
-					});
-				}
-			});
-		},
-		() => {
-			return self.createAccount();
-		}
-	).then((account) => {
-		if(!account) {
-			return Promise.reject('THE ACCOUNT COULD NOT BE RETRIEVED OR CREATED');
-		}
+            return self.walletManager.exists().then((doesExist) => {
+                if (doesExist) {
+                    return Promise.resolve(self);
+                } else {
+                    return self.walletManager.create(self.xPrivKey).then(() => {
+                        return Promise.resolve(self);
+                    });
+                }
+            });
+        },
+        () => {
+            return self.createAccount();
+        }
+    ).then((account) => {
+        if (!account) {
+            return Promise.reject('THE ACCOUNT COULD NOT BE RETRIEVED OR CREATED');
+        }
 
-		return self.walletManager.getSingle();
-	}).then((walletId) => {
-		console.log('PRIVATE KEY: ' + JSON.stringify(self.getPrivateKey()));
-		console.log('OTHER KEYS: ' + JSON.stringify(self.getKeys()));
+        return self.walletManager.getSingle();
+    }).then((walletId) => {
+        console.log('PRIVATE KEY: ' + JSON.stringify(self.getPrivateKey()));
+        console.log('OTHER KEYS: ' + JSON.stringify(self.getKeys()));
 
-		self.walletId = walletId;
+        self.walletId = walletId;
 
-		var devicePrivKey = self.getPrivateKey().derive("m/1'").privateKey.bn.toBuffer({size:32});
-		self.device.setDevicePrivateKey(devicePrivKey);
-		self.myDeviceAddress = self.device.getMyDeviceAddress();
+        const devicePrivKey = self.getPrivateKey().derive("m/1'").privateKey.bn.toBuffer({size: 32});
+        self.device.setDevicePrivateKey(devicePrivKey);
+        self.myDeviceAddress = self.device.getMyDeviceAddress();
 
-		return new Promise((resolve, reject) => {
-			self.db.query("SELECT 1 FROM extended_pubkeys WHERE device_address=?", [self.myDeviceAddress], function(rows) {
-				if (rows.length > 1) {
-					reject("MORE THAN ONE extended_pubkey?!?");
-				} else if (rows.length === 0) {
-					setTimeout(function () {
-						reject('THE PASSPHRASE IS INCORRECT');
-					}, 1000);
-				} else {
-					resolve();
-				}
-			});
-		});
-	}).then(() => {
-		require('byteballcore/wallet.js'); // we don't need any of its functions but it listens for hubmessages
+        self.dbManager.query(
+            "SELECT 1 FROM extended_pubkeys WHERE device_address=?",
+            [self.myDeviceAddress]
+        ).then((rows) => {
+            if (rows.length > 1) {
+                return Promise.reject("MORE THAN ONE extended_pubkey?!?");
+            } else if (rows.length === 0) {
+                setTimeout(function () {
+                    return Promise.reject('THE PASSPHRASE IS INCORRECT');
+                }, 1000);
+            } else {
+                return Promise.resolve();
+            }
+        });
+    }).then(() => {
+        require('byteballcore/wallet.js'); // we don't need any of its functions but it listens for hubmessages
 
-		const keys = self.getKeys();
+        const keys = self.getKeys();
 
-		const mnemonic_phrase = keys.mnemonic_phrase;
-		const deviceTempPrivKey = Buffer(keys.temp_priv_key, 'base64');
-		const devicePrevTempPrivKey = Buffer(keys.prev_temp_priv_key, 'base64');
+        const mnemonic_phrase = keys.mnemonic_phrase;
+        const deviceTempPrivKey = Buffer(keys.temp_priv_key, 'base64');
+        const devicePrevTempPrivKey = Buffer(keys.prev_temp_priv_key, 'base64');
 
-		var saveTempKeys = function(new_temp_key, new_prev_temp_key, onDone){
-			var processedKeys = {
-				mnemonic_phrase: mnemonic_phrase,
-				temp_priv_key: deviceTempPrivKey.toString('base64'),
-				prev_temp_priv_key: devicePrevTempPrivKey.toString('base64')
-			};
-			self.keyManager.write(processedKeys).then(() => onDone);
-		};
+        const saveTempKeys = function (new_temp_key, new_prev_temp_key, onDone) {
+            const processedKeys = {
+                mnemonic_phrase: mnemonic_phrase,
+                temp_priv_key: deviceTempPrivKey.toString('base64'),
+                prev_temp_priv_key: devicePrevTempPrivKey.toString('base64')
+            };
+            self.keyManager.write(processedKeys).then(() => onDone);
+        };
 
-		self.device.setTempKeys(deviceTempPrivKey, devicePrevTempPrivKey, saveTempKeys);
-		self.device.setDeviceName(self.conf.deviceName);
-		self.device.setDeviceHub(self.conf.hub);
+        self.device.setTempKeys(deviceTempPrivKey, devicePrevTempPrivKey, saveTempKeys);
+        self.device.setDeviceName(self.conf.deviceName);
+        self.device.setDeviceHub(self.conf.hub);
 
-		self.myDevicePubkey = self.device.getMyDevicePubKey();
-		console.log(`====== my device address: ${self.myDeviceAddress}`);
-		console.log(`====== my device pubkey: ${self.myDevicePubkey}`);
+        self.myDevicePubkey = self.device.getMyDevicePubKey();
+        console.log(`====== my device address: ${self.myDeviceAddress}`);
+        console.log(`====== my device pubkey: ${self.myDevicePubkey}`);
 
-		if (self.conf.permanent_pairing_secret){
-			self.pairigCode = `${self.myDevicePubkey}@${self.conf.hub}#${self.conf.permanent_pairing_secret}`;
-			console.log(`====== my pairing code: ${self.pairigCode}`);
-		}
+        if (self.conf.permanent_pairing_secret) {
+            self.pairigCode = `${self.myDevicePubkey}@${self.conf.hub}#${self.conf.permanent_pairing_secret}`;
+            console.log(`====== my pairing code: ${self.pairigCode}`);
+        }
 
-		if (self.conf.bLight){
-			var light_wallet = require('byteballcore/light_wallet.js');
-			light_wallet.setLightVendorHost(self.conf.hub);
-		}
+        if (self.conf.bLight) {
+            const light_wallet = require('byteballcore/light_wallet.js');
+            light_wallet.setLightVendorHost(self.conf.hub);
+        }
 
-		if (self.conf.MAX_UNSPENT_OUTPUTS && self.conf.CONSOLIDATION_INTERVAL){
-			const consolidate = () => {
-				if (!self.network.isCatchingUp()) {
-					self.consolidation.consolidate(self.walletId, self.getSigner());
-				}
-			}
-			setInterval(consolidate, self.conf.CONSOLIDATION_INTERVAL);
-			setTimeout(consolidate, 300*1000);
-		}
+        if (self.conf.MAX_UNSPENT_OUTPUTS && self.conf.CONSOLIDATION_INTERVAL) {
+            const consolidate = () => {
+                if (!self.network.isCatchingUp()) {
+                    self.consolidation.consolidate(self.walletId, self.getSigner());
+                }
+            }
+            setInterval(consolidate, self.conf.CONSOLIDATION_INTERVAL);
+            setTimeout(consolidate, 300 * 1000);
+        }
 
-		return new Promise((resolve) => {
-			//LISTENS FOR UPDATES FOR 2 SECONDS BEFORE DOING ANYTHING
-			setTimeout(function () {
-				console.log('ACCOUNT READY');
-				resolve();
-			}, 2000);
-		});
-	});
+        return new Promise((resolve) => {
+            //LISTENS FOR UPDATES FOR 2 SECONDS BEFORE DOING ANYTHING
+            setTimeout(function () {
+                console.log('ACCOUNT READY');
+                resolve();
+            }, 2000);
+        });
+    });
 };
 
 AccountManager.prototype.sendPayment = function (toAddress, amount) {
@@ -236,7 +241,7 @@ AccountManager.prototype.sendPayment = function (toAddress, amount) {
 
     const signer = self.getSigner();
 
-    if(!signer) {
+    if (!signer) {
         return Promise.reject('THE SIGNER IS NOT DEFINED. USE THIS METHOD ONLY AFTER LOADING THE ACCOUNT WITH readAccount');
     }
 
@@ -249,21 +254,71 @@ AccountManager.prototype.sendPayment = function (toAddress, amount) {
             const callbacks = self.composer.getSavingCallbacks({
                 ifNotEnoughFunds: onError,
                 ifError: onError,
-                ifOk: function(objJoint){
+                ifOk: function (objJoint) {
                     self.network.broadcastJoint(objJoint);
                     resolve(objJoint);
                 }
             });
 
             // i.e.: "LS3PUAGJ2CEYBKWPODVV72D3IWWBXNXO"
-            var payee_address = toAddress;
-            var arrOutputs = [
+            const payee_address = toAddress;
+            const arrOutputs = [
                 {address: fromAddress, amount: 0},      // the change
                 {address: payee_address, amount: amount}  // the receiver
             ];
 
             self.composer.composePaymentJoint([fromAddress], arrOutputs, signer, callbacks);
         });
+    });
+};
+
+AccountManager.prototype.sendPaymentSequentially = function (toAddress, amount) {
+    console.log(`ENQUEUEING A NEW PAYMENT TO ${toAddress} OF ${amount} BYTES`);
+    return this.paymentQueue.enqueue(toAddress, amount);
+};
+
+AccountManager.prototype.checkThereAreStableBytes = function (fromAddress) {
+    const self = this;
+
+    console.log(`CHECKING HOW MANY BYTES ARE STABLE ON THE MAIN FUNDING ADDRESS (${fromAddress}) BEFORE MAKING A PAYMENT`);
+
+    return self.dbManager.query(
+        `SELECT asset, address, is_stable, SUM(amount) AS balance
+        FROM outputs CROSS JOIN units USING(unit)
+        WHERE is_spent=0 AND sequence='good' AND address = ?
+        GROUP BY asset, address, is_stable
+        UNION ALL
+        SELECT NULL AS asset, address, 1 AS is_stable, SUM(amount) AS balance FROM witnessing_outputs
+        WHERE is_spent=0 AND address = ? GROUP BY address
+        UNION ALL
+        SELECT NULL AS asset, address, 1 AS is_stable, SUM(amount) AS balance FROM headers_commission_outputs
+        WHERE is_spent=0 AND address = ? GROUP BY address`,
+        [fromAddress, fromAddress, fromAddress]
+    ).then((rows) => {
+        let totalStableAmount = 0;
+
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+
+            if (row.asset || !row.is_stable) {
+                continue;
+            }
+
+            totalStableAmount += row.balance;
+        }
+
+        if (totalStableAmount >= self.conf.MIN_STABLE_BYTES_ON_MAIN_BEFORE_FUNDING) {
+            console.log(`ENOUGH STABLE BYTES ON THE MAIN FUNDING NODE ADDRESS (${fromAddress}) FOR A PAYMENT`);
+            return Promise.resolve(true);
+        } else {
+            return new Promise((resolve) => {
+                console.log(`NOT ENOUGH STABLE BYTES ON ${fromAddress}. ` +
+                    `WAITING ${self.conf.MAIN_ADDRESS_FUNDS_INSPECTION_PERIOD} ms BEFORE CHECKING AGAIN ...`);
+                setTimeout(resolve, self.conf.MAIN_ADDRESS_FUNDS_INSPECTION_PERIOD);
+            }).then(() => {
+                return self.checkThereAreStableBytes(fromAddress);
+            });
+        }
     });
 };
 
@@ -281,7 +336,7 @@ AccountManager.prototype.emptySharedAddress = function (toBeEmptiedAddress) {
 
     const signer = self.getSigner();
 
-    if(!signer) {
+    if (!signer) {
         return Promise.reject('THE SIGNER IS NOT DEFINED. USE THIS METHOD ONLY AFTER LOADING THE ACCOUNT WITH readAccount');
     }
 
@@ -294,26 +349,26 @@ AccountManager.prototype.emptySharedAddress = function (toBeEmptiedAddress) {
             const callbacks = self.composer.getSavingCallbacks({
                 ifNotEnoughFunds: onError,
                 ifError: onError,
-                ifOk: function(objJoint){
+                ifOk: function (objJoint) {
                     self.network.broadcastJoint(objJoint);
                     resolve(objJoint);
                 }
             });
 
-            var arrOutputs = [
+            const arrOutputs = [
                 {address: toAddress, amount: 0}  // the receiver
             ];
 
             self.composer.composeJoint({
-				send_all: true,
-				paying_addresses: [toBeEmptiedAddress],
+                send_all: true,
+                paying_addresses: [toBeEmptiedAddress],
                 shared_addresses: [toBeEmptiedAddress],
-				outputs: arrOutputs,
-				signer: signer,
-				callbacks: callbacks
+                outputs: arrOutputs,
+                signer: signer,
+                callbacks: callbacks
             });
         });
     });
-}
+};
 
 module.exports = AccountManager;

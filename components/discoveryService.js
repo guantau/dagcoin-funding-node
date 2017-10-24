@@ -79,7 +79,7 @@ DiscoveryService.prototype.makeSureDiscoveryServiceIsConnected = function () {
 
             const timeoutMessages = {timeoutMessage, finalTimeoutMessage};
 
-            this.discoveryServiceAvailabilityCheckingPromise = require('./timedPromises').repeatedTimedPromise(promise, 10000, attempts, timeoutMessages);
+            this.discoveryServiceAvailabilityCheckingPromise = require('./promiseManager').repeatedTimedPromise(promise, 10000, attempts, timeoutMessages);
 
             // After ten minutes will be needed to make sure the discovery service is connected
             setTimeout(() => {
@@ -191,7 +191,7 @@ DiscoveryService.prototype.listenToMessage = function (messageType, messageId) {
 
     const TimeOutInSeconds = 120;
 
-    return require('./timedPromises')
+    return require('./promiseManager')
         .timedPromise(promise, TimeOutInSeconds * 1000, `DID NOT RECEIVE A REPLY FOR MESSAGE ${messageId} WITHIN ${TimeOutInSeconds} SECONDS`)
         .then(
             (message) => {

@@ -126,3 +126,131 @@ exports.listeningTimedPromise = function (event, condition, timeout, timeoutMess
             }
         );
 };
+
+/**
+ * Calls the same promise-returning method on and on every sleep time.
+ * @param tag An identifier for logging.
+ * @param sleepTime Time to sleep after a method execution (millis)
+ * @param method The method. Can be followed by optional parameters
+ */
+exports.loopMethod = function (tag, sleepTime, method) {
+    const self = this;
+
+    const methodParams = Array.from(arguments).slice(3);
+
+    method(...methodParams).then(
+        () => {
+            setTimeout(() => {
+                self.loopMethod(tag, sleepTime, method, ...methodParams);
+            }, sleepTime);
+        },
+        (err) => {
+            console.log(`ERROR WITH PROMISE LOOP ${tag}: ${err}`);
+            setTimeout(() => {
+                self.loopMethod(tag, sleepTime, method, ...methodParams);
+            }, sleepTime);
+        }
+    );
+};
+
+exports.PromiseEnqueuer = function (name, execute, minimumDelay, repeatUntilSuccess) {
+    return {
+        name,
+        promiseQueue: [],
+        minimumDelay,
+        execute,
+        repeatUntilSuccess,
+        promiseId: 0,
+        nextPromiseId: function () {
+            const nextPromiseId = this.promiseId;
+            this.promiseId += 1;
+            return nextPromiseId;
+        },
+        enqueue: function () {
+            const resolver = {};
+
+            const promise = new Promise((resolve, reject) => {
+                resolver.processResult = (result) => {
+                    resolve(result);
+                };
+                resolver.onError = (error) => {
+                    reject(error);
+                }
+            });
+
+            this.promiseQueue.push({arguments, resolver, promiseId: this.nextPromiseId()});
+
+            this.resolve();
+
+            return promise;
+        },
+        free: function () {
+            delete this.executing;
+            this.resolve();
+        },
+        lock: function () {
+            if (this.promiseQueue.length === 0) {
+                console.log(`PROMISE QUEUE ${this.name} IS FREE`);
+                return;
+            }
+
+            if(this.executing) {
+                console.log(`PROMISE QUEUE ${this.name} IS BUSY`);
+                return;
+            }
+
+            this.executing = true;
+
+            //console.log(this.promiseQueue[this.promiseQueue.length - 1]);
+            return this.promiseQueue.shift();
+        },
+        resolve: function () {
+            const self = this;
+
+            const promiseDefinition = self.lock();
+
+            if (!promiseDefinition) {
+                return;
+            }
+
+            const parameters = promiseDefinition.arguments;
+            const resolver = promiseDefinition.resolver;
+
+            let promise = null;
+
+            console.log(`PROMISE QUEUE ${self.name} EXECUTING NOW ${promiseDefinition.promiseId}`);
+
+            if (parameters) {
+                promise = self.execute(...parameters);
+            } else {
+                promise = self.execute();
+            }
+
+            return promise.then(
+                (result) => {
+                    resolver.processResult(result);
+                    return Promise.resolve();
+                },
+                (error) => {
+                    if (!self.repeatUntilSuccess) {
+                        resolver.onError(error);
+                    } else {
+                        console.log(`WHILE RESOLVING A SEQUENTIAL PROMISE: ${error}. `);
+                        this.promiseQueue.push(promiseDefinition);
+                    }
+                    return Promise.resolve();
+                }
+            ).then(() => {
+                if(!self.minimumDelay) {
+                    self.free();
+                } else {
+                    console.log(`STARTING TO WAIT ... THERE IS A DELAY OF ${self.minimumDelay} ms`);
+                    setTimeout(() => {
+                        console.log('MINIMUM DELAY EXPIRED');
+                        self.free()
+                    }, minimumDelay);
+                }
+            });
+        }
+    };
+};

@@ -22,6 +22,6 @@ ConfManager.prototype.write = function(entries) {
 			}
 		});
 	});
-}
+};
 
 module.exports = ConfManager;

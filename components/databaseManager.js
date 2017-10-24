@@ -58,8 +58,9 @@ DatabaseManager.prototype.checkOrUpdateDatabase = function () {
             }
         ).then(() => {
             const dbMigrate = require('db-migrate').getInstance(true, {env: self.conf.environment});
-            return dbMigrate.down(3).then(() => {
-                return dbMigrate.up(3).then(() => {console.log('MIGRATED');});
+            return dbMigrate.up().then(() => {
+                // return dbMigrate.up().then(() => {console.log('MIGRATED');});
+                console.log('MIGRATED');
             });
         }).catch((error) => {
             console.log(`FAILED CHECKING/UPDATING THE DATABASE: ${error}`);

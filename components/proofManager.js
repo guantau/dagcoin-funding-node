@@ -55,7 +55,7 @@ ProofManager.prototype.proofAddressBatch = function (proofAddressBatch) {
     });
 };
 
-ProofManager.prototype.proofAddress = function (proof) {
+ProofManager.prototype.proofAddress = function (proof, deviceAddress) {
     const self = this;
 
     if (!proof) {
@@ -68,6 +68,11 @@ ProofManager.prototype.proofAddress = function (proof) {
 
     if (!proof.address_definition) {
         throw Error('PARAMETER proof.address_definition IS NOT SET');
+    }
+
+    if (deviceAddress && deviceAddress !== proof.deviceAddress) {
+        console.log(`PROOF GIVEN FOR DEVICE ADDRESS ${proof.deviceAddress} BUT WAS REQUESTED FOR ${deviceAddress}`);
+        return Promise.resolve(false);
     }
 
     const definition = JSON.parse(proof.address_definition);
@@ -93,7 +98,7 @@ ProofManager.prototype.proofAddress = function (proof) {
         self.db.query(
             `SELECT device_address, address_definition
              FROM dagcoin_proofs 
-             WHERE validated = 1 AND address = ? AND device_address = ?`,
+             WHERE proofed = 1 AND address = ? AND device_address = ?`,
             [proof.master_address, proof.device_address],
             (rows) => {
                 if (!rows || rows.length === 0) {
@@ -163,13 +168,41 @@ ProofManager.prototype.proof = function (textToProve, signature, definition) {
     return this.ecdsaSig.verify(bufferOfTextToProve, signature, publicKeyBase64);
 };
 
+ProofManager.prototype.hasAddressProofInDb = function (address, deviceAddress) {
+    const self = this;
+
+    return new Promise((resolve, reject) => {
+        self.db.query(
+            'SELECT proofed FROM dagcoin_proofs WHERE address = ? AND device_address = ?',
+            [address, deviceAddress],
+            (rows) => {
+                if (!rows || rows.length === 0) {
+                    resolve(false);
+                    return;
+                }
+
+                if (rows.length > 1) {
+                    reject(`MORE THAN A PROOF FOR ${address}, ${deviceAddress}. THIS IS UNEXPECTED`);
+                    return;
+                }
+
+                resolve(rows[0].proofed === 1);
+            }
+        );
+    });
+};
+
 /**
  *
  * @param proof
  * @returns {Promise} Resolves to true when the address proof is stored into the db
  */
-ProofManager.prototype.proofAddressAndSaveToDB = function (proof) {
+ProofManager.prototype.proofAddressAndSaveToDB = function (proof, deviceAddress) {
     const self = this;
+
+    if (deviceAddress && deviceAddress !== proof.device_address) {
+        return Promise.resolve(false);
+    }
 
     return new Promise((resolve, reject) => {
         self.db.query(

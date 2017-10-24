@@ -5,15 +5,49 @@ module.exports = function (properties) {
     const fetcher = new DataFetcher(properties);
     const conf = require('byteballcore/conf.js');
     const http = require('http');
+    const DatabaseManager = require(`${__dirname}/../../../databaseManager`);
+    const dbManager = new DatabaseManager();
 
     if (!properties.masterAddress) {
         throw Error(`NO masterAddress IN DataFetcher enoughDagcoins. PROPERTIES: ${properties}`);
     }
 
-    // TODO: lookup all address linked to the masterAddress and ask for the sum of their balance.
     fetcher.retrieveData = function () {
+        return dbManager.query(
+            'SELECT address FROM dagcoin_proofs WHERE master_address = ? AND proofed = 1',
+            [properties.masterAddress]
+        ).then((rows) => {
+            const fundCheckPromises = [];
+            fundCheckPromises.push(fetcher.getAddressDagcoinBalance(properties.masterAddress));
+
+            if (rows && rows.length > 0) {
+               for(let i = 0; i < rows.length; i+=1) {
+                   fundCheckPromises.push(fetcher.getAddressDagcoinBalance(rows[i].address));
+               }
+            }
+
+            return Promise.all(fundCheckPromises);
+        }).then((values) => {
+            let totalDagcoins = 0;
+
+            if (values && values.length > 0) {
+                for (let i = 0; i < values.length; i += 1) {
+                    totalDagcoins += values[i];
+                }
+            }
+
+            if (totalDagcoins >= 500000) {
+                return Promise.resolve(true);
+            } else {
+                console.log(`NOT ENOUGH DAGCOINS CONFIRMED ON ${properties.masterAddress} FOR FUNDING ITS SHARED ADDRESS`);
+                return Promise.resolve(false);
+            }
+        });
+    };
+
+    fetcher.getAddressDagcoinBalance = function (address) {
         return new Promise((resolve, reject) => {
-            http.get(`http://localhost:9852/getAddressBalance?address=${properties.masterAddress}`, (resp) => {
+            http.get(`http://localhost:9852/getAddressBalance?address=${address}`, (resp) => {
                 let data = '';
 
                 // A chunk of data has been received.
@@ -26,11 +60,10 @@ module.exports = function (properties) {
                     try {
                         const balance = JSON.parse(data);
 
-                        if (balance[conf.dagcoinAsset] && balance[conf.dagcoinAsset].stable >= 500000) {
-                            resolve(true);
+                        if (balance[conf.dagcoinAsset]) {
+                            resolve(balance[conf.dagcoinAsset].stable);
                         } else {
-                            console.log(`NOT ENOUGH DAGCOINS CONFIRMED ON ${properties.masterAddress} FOR FUNDING ITS SHARED ADDRESS`);
-                            resolve(false);
+                            resolve(0);
                         }
                     } catch (e) {
                         reject( `COULD NOT PARSE ${data} INTO A JSON OBJECT: ${e}`);

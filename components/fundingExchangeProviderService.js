@@ -21,6 +21,9 @@ function FundingExchangeProvider(pairingString, xPrivKey) {
     const ProofManager = require('./proofManager');
     this.proofManager = new ProofManager();
 
+    const DagcoinProtocolManager = require('./dagcoinProtocolManager');
+    this.dagcoinProtocolManager = new DagcoinProtocolManager();
+
     console.log(`pairingString: ${this.pairingString}`);
     console.log(`xPrivKey: ${this.xPrivKey}`);
 
@@ -58,19 +61,6 @@ FundingExchangeProvider.prototype.activate = function () {
             console.log(`REQUEST TO SHARE AN ADDRESS FROM ${deviceAddress}: ${JSON.stringify(message)}`);
             self.shareFundedAddress(deviceAddress, message).then(
                 (sharedAddress) => {
-                    console.log(`NEW SHARED ADDRESS CREATED: ${sharedAddress}`);
-                },
-                (err) => {
-                    console.log(`COULD NOT CREATE A SHARED ADDRESS: ${err}`);
-                }
-            );
-        });
-
-        self.eventBus.on('dagcoin.request.link-address', (message, deviceAddress) => {
-            console.log(`REQUEST TO LINK AN ADDRESS FROM ${deviceAddress}: ${JSON.stringify(message)}`);
-
-            self.linkAddress(deviceAddress, message).then(
-                () => {
                     console.log(`NEW SHARED ADDRESS CREATED: ${sharedAddress}`);
                 },
                 (err) => {
@@ -161,10 +151,6 @@ FundingExchangeProvider.prototype.initDagcoinDestination = function () {
     });
 };
 
-FundingExchangeProvider.prototype.linkAddress = function () {
-    throw "Not yet implemented";
-};
-
 FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAddress, message) {
     this.initComponents();
 
@@ -198,7 +184,7 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
     console.log('STARTING THE ADDRESS GENERATION PROCESS');
 
     this.shareFundedAddressPromise = this.initDagcoinDestination().then((myAddress) => {
-        return self.proofManager.proofAddressAndSaveToDB(proof).then(() => {
+        return self.proofManager.proofAddressAndSaveToDB(proof, remoteDeviceAddress).then(() => {
             return new Promise((resolve) => {
                 // CHECK IF THE SHARED ADDRESS FOR THE REQUESTOR ALREADY EXISTS
                 self.db.query(
@@ -513,16 +499,26 @@ FundingExchangeProvider.prototype.handleSharedPaymentRequest = function () {
                             }
                         }
 
-                        if (approve) {
-                            //APPROVED if there is an output to the base address of some dagcoins
-                            createAndSendSignature();
-                            assocChoicesByUnit[unit] = "approve";
-                        } else { //NOT APPROVED
-                            refuseSignature();
-                            assocChoicesByUnit[unit] = "refuse";
-                        }
+                        return self.proofAuthors(from_address, authors).then(
+                            (proofingResult) => {
+                                approve = proofingResult;
+                            },
+                            (error) => {
+                                console.error(`NO PROOF PROVIDED FOR AUTHORS ${authors} BY ${from_address} BECAUSE: ${error}`);
+                                approve = false;
+                            }
+                        ).then(() => {
+                            if (approve) {
+                                //APPROVED if there is an output to the base address of some dagcoins
+                                createAndSendSignature();
+                                assocChoicesByUnit[unit] = "approve";
+                            } else { //NOT APPROVED
+                                refuseSignature();
+                                assocChoicesByUnit[unit] = "refuse";
+                            }
 
-                        unlock();
+                            unlock();
+                        });
                     }
                 ); // eachSeries
             });
@@ -530,5 +526,51 @@ FundingExchangeProvider.prototype.handleSharedPaymentRequest = function () {
     });
 };
 
+FundingExchangeProvider.prototype.proofAuthors = function(fromAddress, authors) {
+    const self = this;
+
+    const authorAddressNeedsProofPromise = [];
+
+    for (let i = 0; i < authors.length; i++) {
+        authorAddressNeedsProofPromise.push(self.proofManager.hasAddressProofInDb(authors[i].address, fromAddress));
+    }
+
+    return Promise.all(authorAddressNeedsProofPromise).then((values) => {
+        const addressesNeedingProofs = [];
+
+        for (let i = 0; i < authors.length; i++) {
+            if (!values[i]) {
+                addressesNeedingProofs.push(authors[i].address);
+            }
+        }
+
+        if(!addressesNeedingProofs || addressesNeedingProofs.length == 0) {
+            return Promise.resolve(null);
+        }
+
+        const request = {
+            addresses: addressesNeedingProofs
+        };
+
+        return self.dagcoinProtocolManager.sendRequestAndListen(fromAddress, 'proofing', request).then((proofs) => {
+            if (proofs == null || proofs.length === 0) {
+                return Promise.reject(`NO PROOFS PROVIDED IN THE CLIENT RESPONSE FOR ${JSON.stringify(addressesNeedingProofs)}`);
+            } else {
+                return Promise.resolve(proofs)
+            }
+        });
+    }).then((proofs) => {
+        return self.proofManager.proofAddressBatch(proofs, fromAddress);
+    }).then(
+        (result) => {
+            console.log(`PROOF RESULT FOR ${fromAddress} ${JSON.stringify(authors)}: ${JSON.stringify(result)}`);
+            return Promise.resolve(result.invalidBatch.length > 0);
+        },
+        (error) => {
+            console.error(`NO PROOF PROVIDED FOR AUTHORS ${authors} BY ${fromAddress} BECAUSE: ${error}`);
+            return Promise.resolve(false);
+        }
+    );
+};
 
 module.exports = FundingExchangeProvider;

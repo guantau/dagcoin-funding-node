@@ -16,7 +16,7 @@ module.exports = function (properties) {
 
     fetcher.retrieveData = function () {
         return dbManager.query(
-            'SELECT address FROM dagcoins_proofs WHERE address = ? AND device_address = ? AND proofed = ?',
+            'SELECT address FROM dagcoin_proofs WHERE address = ? AND device_address = ? AND proofed = ?',
             [properties.address, properties.deviceAddress, 1]
         ).then((rows) => {
             return Promise.resolve(rows && rows.length === 1);

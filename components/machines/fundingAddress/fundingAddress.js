@@ -4,10 +4,11 @@ const StateMachine = require('../../fsm/stateMachine');
 
 module.exports = function (addressObject) {
     const statusMap = {
+        'NEW': 'not-proofed',
         'NOT_PROOFED': 'not-proofed',
         'PROOFED': 'proofed-legacy',
         'LEGACY': 'proofed-legacy',
-        'READY': 'can-fuel-ready',
+        'READY': 'proofed-legacy',
         'VOID': 'void'
     };
 
@@ -57,11 +58,14 @@ module.exports = function (addressObject) {
                     {name: 'enoughDagcoins', masterAddress: addressObject.master_address},
                     {name: 'enoughBytes', sharedAddress: addressObject.shared_address}
                 ],
-                actionsIn: [{name: 'setStatus', sharedAddress: addressObject.shared_address, status: 'READY'}]
+                actionsIn: [
+                    {name: 'setStatus', sharedAddress: addressObject.shared_address, status: 'READY'},
+                    {name: 'fundSharedAddress', sharedAddress: addressObject.shared_address}
+                ]
             },
             {
                 name: 'cannot-fuel',
-                evaluationPeriod: 5 * 1000,
+                evaluationPeriod: 90 * 1000,
                 fetchers: [
                     {name: 'enoughDagcoins', masterAddress: addressObject.master_address},
                     {name: 'enoughBytes', sharedAddress: addressObject.shared_address}

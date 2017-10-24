@@ -114,7 +114,7 @@ State.prototype.enable = function () {
     const self = this;
 
     if (self.triggersAndTimersEnabled) {
-        console.log(`TRIGGERS AND TIMERS OF STATE ${this.name} OF ${this.stateMachine.getnName()} ALREADY INITIALIZED`);
+        console.log(`TRIGGERS AND TIMERS OF STATE ${this.name} OF ${this.stateMachine.getName()} ALREADY INITIALIZED`);
         return;
     }
 

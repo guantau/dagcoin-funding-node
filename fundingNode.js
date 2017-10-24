@@ -14,15 +14,16 @@ const dbManager = new DatabaseManager();
 const ProofManager = require('./components/proofManager');
 const proofManager = new ProofManager();
 
-const promiseManager = require('./components/promiseManager');
-
 const fundsNeedingAddresses = new Array();
 
-if (conf.permanent_pairing_secret)
-    db.query(
+const followedAddress = [];
+
+if (conf.permanent_pairing_secret) {
+    dbManager.query (
         "INSERT " + db.getIgnore() + " INTO pairing_secrets (pairing_secret, is_permanent, expiry_date) VALUES (?, 1, '2038-01-01')",
         [conf.permanent_pairing_secret]
     );
+}
 
 function handlePairing(from_address) {
     console.log(`PAIRED WITH ${from_address}`);
@@ -54,6 +55,65 @@ function setupChatEventHandlers() {
             } else {
                 console.log(`CORRESPONDENT OF ${fromAddress} NOT FOUND`);
             }
+        });
+
+        // IF THE CONNECTED DEVICE HAS A FUNDING ADDRESS, LET'S LOAD IT
+        dbManager.query(
+            'SELECT shared_address, master_address, master_device_address, definition_type, ' +
+            'status, created, last_status_change, previous_status FROM dagcoin_funding_addresses WHERE master_device_address = ?',
+            [fromAddress]
+        ).then((rows) => {
+            if (!rows || rows.length === 0) {
+                return Promise.resolve();
+            }
+
+            if (followedAddress.indexOf(rows[0].shared_address) !== -1) {
+                console.log(`ALREADY FOLLOWING ${rows[0].shared_address}`)
+                return Promise.resolve();
+            }
+
+            const fundingAddressFsm = require('./components/machines/fundingAddress/fundingAddress')(rows[0]);
+
+            console.log(fundingAddressFsm.getCurrentState().getName());
+
+            followedAddress.push(rows[0].shared_address);
+
+            return fundingAddressFsm.pingUntilOver(false);
+        });
+    });
+
+    eventBus.on('dagcoin.request.link-address', (message, fromAddress) => {
+        console.log(`DAGCOIN link-address REQUEST: ${JSON.stringify(message)} FROM ${fromAddress}`);
+
+        message.messageBody.device_address = fromAddress;
+
+        proofManager.proofAddressAndSaveToDB(message.messageBody, fromAddress);
+    });
+
+    eventBus.on('dagcoin.request.load-address', (message, fromAddress) => {
+        console.log(`DAGCOIN load-address REQUEST: ${JSON.stringify(message)} FROM ${fromAddress}`);
+
+        dbManager.query(
+            'SELECT shared_address, master_address, master_device_address, definition_type, ' +
+            'status, created, last_status_change, previous_status FROM dagcoin_funding_addresses WHERE master_device_address = ?',
+            [fromAddress]
+        ).then((rows) => {
+            if (!rows || rows.length === 0) {
+                return Promise.resolve();
+            }
+
+            if (followedAddress.indexOf(rows[0].shared_address) !== -1) {
+                console.log(`ALREADY FOLLOWING ${rows[0].shared_address}`);
+                return Promise.resolve();
+            }
+
+            const fundingAddressFsm = require('./components/machines/fundingAddress/fundingAddress')(rows[0]);
+
+            console.log(fundingAddressFsm.getCurrentState().getName());
+
+            followedAddress.push(rows[0].shared_address);
+
+            return fundingAddressFsm.pingUntilOver(false);
         });
     });
 
@@ -266,7 +326,7 @@ function loadFirstFundingAddress () {
 }
 
 dbManager.checkOrUpdateDatabase().then(() => {
-    loadFirstFundingAddress();
+    // loadFirstFundingAddress();
 
     accountManager.readAccount().then(
         () => {
@@ -289,7 +349,7 @@ dbManager.checkOrUpdateDatabase().then(() => {
 
                 fundingExchangeProvider.handleSharedPaymentRequest();
 
-                setInterval(fundSharedAddresses, 60 * 1000);
+                // setInterval(fundSharedAddresses, 60 * 1000);
 
                 // SETTING UP THE LOOPS
                 require('./components/routines/evaluateProofs').start(5 * 1000, 60 * 1000);
@@ -305,5 +365,5 @@ dbManager.checkOrUpdateDatabase().then(() => {
         }
     );
 
-    fund();
+    // fund();
 });

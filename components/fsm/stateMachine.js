@@ -138,11 +138,15 @@ function StateMachine(properties, states, firstState, transitions) {
             }
         }
 
-        if (!stateProperties.isFinal) {
-            if (!stateProperties.fetchers || stateProperties.fetchers == 0) {
-                throw `State WITHOUT ANY fetchers, THERE SHOULD BE ONE AT LEAST. CHECK YOUR StateMachine DEFINITION: ${JSON.stringify(stateProperties)}`;
-            }
+        if (stateProperties.isFinal && stateProperties.fetchers && stateProperties.fetchers.length > 0) {
+            throw `FINAL State (isFinal IS true) WITH fetchers. IT SHOULD NOT HAVE ANY: ${JSON.stringify(stateProperties)}`;
+        }
 
+        if (!stateProperties.isFinal && (!stateProperties.fetchers || stateProperties.fetchers.length === 0)) {
+            throw `NOT FINAL State (isFinal IS false) WITHOUT fetchers. IT SHOULD HAVE AT LEAST ONE: ${JSON.stringify(stateProperties)}`;
+        }
+
+        if (stateProperties.fetchers && stateProperties.fetchers.length > 0) {
             const fetchers = stateProperties.fetchers;
 
             for(let j = 0; j < fetchers.length; j += 1 ) {

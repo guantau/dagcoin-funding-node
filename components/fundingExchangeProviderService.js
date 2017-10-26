@@ -264,7 +264,7 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
                 );
             }).then(() => {
                 self.walletDefinedByAddress.createNewSharedAddressByTemplate(addressDefinitionTemplate, myAddress, {"r": myDeviceAddress});
-                resolve(definitionTemplateHash);
+                return Promise.resolve(definitionTemplateHash);
             });
         });
     }).then((definitionTemplaceHash) => {

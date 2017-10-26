@@ -4,6 +4,8 @@
 function DagcoinProtocolManager () {
 	this.device = require('byteballcore/device');
     this.timedPromises = require('./promiseManager');
+
+    this.messageCounter = 0;
 }
 
 DagcoinProtocolManager.prototype.nextMessageId = function () {
@@ -27,7 +29,7 @@ DagcoinProtocolManager.prototype.sendMessage = function (deviceAddress, messageT
 
     const self = this;
 
-    if (!messageId) {
+    if (messageId == null) {
         messageId = this.nextMessageId();
     }
 
@@ -64,18 +66,35 @@ DagcoinProtocolManager.prototype.sendRequestAndListen = function (deviceAddress,
 
     const messageId = self.nextMessageId();
 
+    console.log(`SENDING MESSAGE WITH ID: ${messageId}`);
+
     const listeningPromise = self.timedPromises.listeningTimedPromise(
     	`dagcoin.response.${subject}`,
 		(message, fromAddress) => {
+    		console.log(`CONDITION WITH ${JSON.stringify(message)} ID: ${messageId} FROM ${fromAddress}`);
     		if (fromAddress !== deviceAddress) {
+    			console.log(`INCOMPATIBLE DEVICE ADDRESSES: ${fromAddress} : ${deviceAddress}`);
     			return null;
 			}
 
 			if (message.id !== messageId) {
+                console.log(`INCOMPATIBLE MESSAGE IDs: ${message.id} : ${messageId}`);
     			return null;
 			}
 
-			return messageBody.proofs;
+			if (message.messageBody.error) {
+                console.log(`ERROR DETECTED: ${message.messageBody.error}`);
+    			throw Error(message.messageBody.error);
+			}
+
+			if (!message.messageBody.proofs || message.messageBody.proofs.length == 0) {
+                console.log(`NO PROOFS PROVIDED`);
+                return null;
+			}
+
+			console.log(`RETURNING ${JSON.stringify(message.messageBody.proofs)}`);
+
+			return message.messageBody.proofs;
 		},
 		30 * 1000,
 		`DID NOT RECEIVE A REPLY FOR ${JSON.stringify(messageBody)}`

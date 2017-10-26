@@ -67,6 +67,7 @@ module.exports = function (addressObject) {
                 name: 'cannot-fuel',
                 evaluationPeriod: 90 * 1000,
                 fetchers: [
+                    {name: 'newLoadedAddresses', deviceAddress: addressObject.master_device_address},
                     {name: 'enoughDagcoins', masterAddress: addressObject.master_address},
                     {name: 'enoughBytes', sharedAddress: addressObject.shared_address}
                 ],

@@ -32,7 +32,7 @@ ProofManager.prototype.activate = function () {
     this.active = true;
 };
 
-ProofManager.prototype.proofAddressBatch = function (proofAddressBatch) {
+ProofManager.prototype.proofAddressBatch = function (proofAddressBatch, deviceAddress) {
     const self = this;
 
     if (!proofAddressBatch || proofAddressBatch.length === 0) {
@@ -43,7 +43,7 @@ ProofManager.prototype.proofAddressBatch = function (proofAddressBatch) {
     const proof = proofAddressBatch.pop();
 
     return self.proofAddressBatch(proofAddressBatch).then((result) => {
-        return self.proofAddress(proof).then((valid) => {
+        return self.proofAddressAndSaveToDB(proof, deviceAddress).then((valid) => {
             if (valid) {
                 result.validbatch.push(proof);
             } else {
@@ -55,8 +55,18 @@ ProofManager.prototype.proofAddressBatch = function (proofAddressBatch) {
     });
 };
 
-ProofManager.prototype.proofAddress = function (proof, deviceAddress) {
+ProofManager.prototype.proofAddress = function (proof, proofDeviceAddress) {
     const self = this;
+
+    let deviceAddress = proofDeviceAddress;
+
+    if (!deviceAddress) {
+        deviceAddress = proof.device_address;
+
+        if (!deviceAddress) {
+            throw Error('NO DEVICE ADDRESS AVAILABLE FOR PROOFING');
+        }
+    }
 
     if (!proof) {
         throw Error('PARAMETER proof IS NOT SET');
@@ -70,11 +80,6 @@ ProofManager.prototype.proofAddress = function (proof, deviceAddress) {
         throw Error('PARAMETER proof.address_definition IS NOT SET');
     }
 
-    if (deviceAddress && deviceAddress !== proof.deviceAddress) {
-        console.log(`PROOF GIVEN FOR DEVICE ADDRESS ${proof.deviceAddress} BUT WAS REQUESTED FOR ${deviceAddress}`);
-        return Promise.resolve(false);
-    }
-
     const definition = JSON.parse(proof.address_definition);
 
     const definitionHash = self.hasher.getChash160(definition);
@@ -86,10 +91,12 @@ ProofManager.prototype.proofAddress = function (proof, deviceAddress) {
 
     console.log(`HASH 160 VALIDATED: ${proof.address} IS THE HASH OF ${proof.address_definition}`);
 
-    const valid = self.proof(proof.device_address, proof.device_address_signature, definition);
+    console.log(`PROOFING ${deviceAddress} AGAINST ${proof.device_address_signature}`);
+    const valid = self.proof(deviceAddress, proof.device_address_signature, definition);
 
     // IT MEANS IT DOES NOT HAVE A MASTER ADDRESS (SO IT IS ONE) OR IS ALREADY INVALID
     if (!proof.master_address || !valid) {
+        console.log(`PROOF RESULT: ${valid}`);
         return Promise.resolve(valid);
     }
 
@@ -99,18 +106,18 @@ ProofManager.prototype.proofAddress = function (proof, deviceAddress) {
             `SELECT device_address, address_definition
              FROM dagcoin_proofs 
              WHERE proofed = 1 AND address = ? AND device_address = ?`,
-            [proof.master_address, proof.device_address],
+            [proof.master_address, deviceAddress],
             (rows) => {
                 if (!rows || rows.length === 0) {
                     console.log(`COULD NOT FIND PROOF FOR MASTER ADDRESS ${proof.master_address} OF ${proof.address} WITH DEVICE
-                    ${proof.device_address}`);
+                    ${deviceAddress}`);
                     resolve(false);
                     return;
                 }
 
                 if (rows.length > 1) {
                     reject(`TOO MANY PROOF FOR MASTER ADDRESS ${proof.master_address} OF ${proof.address} WITH DEVICE
-                    ${proof.device_address}`);
+                    ${deviceAddress}`);
                     return;
                 }
 
@@ -118,13 +125,13 @@ ProofManager.prototype.proofAddress = function (proof, deviceAddress) {
 
                 if (!masterDeviceAddress) {
                     reject(`NO DEVICE ADDRESS FOR MASTER ADDRESS ${proof.master_address} OF ${proof.address} WITH DEVICE
-                ${proof.device_address}`);
+                ${deviceAddress}`);
                     return;
                 }
 
-                if (masterDeviceAddress !== proof.device_address) {
+                if (masterDeviceAddress !== deviceAddress) {
                     console.log(`DEVICE ADDRESSES OF MASTER ADDRESS ${proof.master_address} AND ${proof.address} DO NOT MATCH:
-                ${proof.device_address} ≃ ${masterDeviceAddress}`);
+                ${deviceAddress} ≃ ${masterDeviceAddress}`);
                     resolve(false);
                     return;
                 }
@@ -133,7 +140,7 @@ ProofManager.prototype.proofAddress = function (proof, deviceAddress) {
 
                 if (!masterAddressDefinition) {
                     reject(`NO ADDRESS DEFINITION FOR MASTER ADDRESS ${proof.master_address} OF ${proof.address} WITH DEVICE
-                ${proof.device_address}`);
+                ${deviceAddress}`);
                     return;
                 }
 
@@ -202,14 +209,10 @@ ProofManager.prototype.hasAddressProofInDb = function (address, deviceAddress) {
 ProofManager.prototype.proofAddressAndSaveToDB = function (proof, deviceAddress) {
     const self = this;
 
-    if (deviceAddress && deviceAddress !== proof.device_address) {
-        return Promise.resolve(false);
-    }
-
     return new Promise((resolve, reject) => {
         self.db.query(
             'SELECT address, proofed FROM dagcoin_proofs WHERE address = ? AND device_address = ?',
-            [proof.address, proof.device_address],
+            [proof.address, deviceAddress],
             (rows) => {
                 if (!rows || rows.length === 0) {
                     console.log(`NO PROOF AVAILABLE FOR ${proof.address} YET`);
@@ -225,13 +228,13 @@ ProofManager.prototype.proofAddressAndSaveToDB = function (proof, deviceAddress)
                 const previousProof = rows[0];
 
                 if (!previousProof.proofed) {
-                    console.log(`ALREADY DETECTED A FAILED ATTEMPT TO PROOF ${proof.address} OWNERSHIP TO ${proof.device_address}`);
+                    console.log(`ALREADY DETECTED A FAILED ATTEMPT TO PROOF ${proof.address} OWNERSHIP TO ${deviceAddress}`);
 
                     self.db.query(
                         'DELETE FROM dagcoin_proofs WHERE address = ? AND device_address = ?',
-                        [proof.address, proof.device_address],
+                        [proof.address, deviceAddress],
                         (result) => {
-                            console.log(`DB DELETE OF OLD PROOF OF ${proof.address} OWNERSHIP TO ${proof.device_address} : ${result}`)
+                            console.log(`DB DELETE OF OLD PROOF OF ${proof.address} OWNERSHIP TO ${deviceAddress} : ${result}`)
                             resolve (false);
                         }
                     );
@@ -247,7 +250,7 @@ ProofManager.prototype.proofAddressAndSaveToDB = function (proof, deviceAddress)
             return Promise.resolve(true);
         }
 
-        return self.proofAddress(proof).then((proofed) => {
+        return self.proofAddress(proof, deviceAddress).then((proofed) => {
             return new Promise((resolve) => {
                 self.db.query(`
                     INSERT INTO dagcoin_proofs (
@@ -265,11 +268,11 @@ ProofManager.prototype.proofAddressAndSaveToDB = function (proof, deviceAddress)
                         proof.device_address_signature,
                         proof.master_address,
                         proof.master_address_signature,
-                        proof.device_address,
+                        deviceAddress,
                         proofed
                     ],
                     (result) => {
-                        console.log(`DB DELETE OF OLD PROOF OF ${proof.address} OWNERSHIP TO ${proof.device_address} : ${result}`)
+                        console.log(`DB DELETE OF OLD PROOF OF ${proof.address} OWNERSHIP TO ${deviceAddress} : ${result}`)
                         resolve(proofed);
                     }
                 );

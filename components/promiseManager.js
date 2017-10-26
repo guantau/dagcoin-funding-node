@@ -96,7 +96,13 @@ exports.listeningTimedPromise = function (event, condition, timeout, timeoutMess
             console.log(`ARGUMENT ${a}: ${arguments[a]}`);
         }
 
-        const resolutionValue = condition(...arguments);
+        let resolutionValue = null;
+
+        try {
+            resolutionValue = condition(...arguments);
+        } catch (e) {
+            console.error(`ERROR IN EVALUATING CONDITION: ${e.message}`, e.stack);
+        }
 
         if (!resolutionValue) {
             console.log(`IGNORING USELESS EVENT ${event}`);
@@ -108,8 +114,14 @@ exports.listeningTimedPromise = function (event, condition, timeout, timeoutMess
 
     eb.on(event, listener);
 
-    const promise = new Promise((resolve) => {
-        eb.once(uniqueInternalEvent, resolve);
+    const promise = new Promise((resolve, reject) => {
+        eb.once(uniqueInternalEvent, (resolutionValue, error) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(resolutionValue);
+            }
+        });
     });
 
     return this.timedPromise(promise, timeout, timeoutMessage)

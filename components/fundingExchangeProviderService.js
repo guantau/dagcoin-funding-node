@@ -559,20 +559,21 @@ FundingExchangeProvider.prototype.proofAuthors = function(fromAddress, authors) 
         };
 
         return self.dagcoinProtocolManager.sendRequestAndListen(fromAddress, 'proofing', request).then((proofs) => {
-            if (proofs == null || proofs.length === 0) {
+            console.log(`PROOFS: ${JSON.stringify(proofs)}`);
+
+            if (!proofs || proofs.length === 0) {
                 return Promise.reject(`NO PROOFS PROVIDED IN THE CLIENT RESPONSE FOR ${JSON.stringify(addressesNeedingProofs)}`);
             } else {
                 return Promise.resolve(proofs);
             }
         });
     }).then((proofs) => {
+        console.log(`PROOFS AGAIN: ${JSON.stringify(proofs)}`);
         return self.proofManager.proofAddressBatch(proofs, fromAddress);
-    }).then(
-        (result) => {
-            console.log(`PROOF RESULT FOR ${fromAddress} ${JSON.stringify(authors)}: ${JSON.stringify(result)}`);
-            return Promise.resolve(result.invalidBatch.length === 0);
-        }
-    );
+    }).then((result) => {
+        console.log(`PROOF RESULT FOR ${fromAddress} ${JSON.stringify(authors)}: ${JSON.stringify(result)}`);
+        return Promise.resolve(result.invalidBatch.length === 0);
+    });
 };
 
 module.exports = FundingExchangeProvider;

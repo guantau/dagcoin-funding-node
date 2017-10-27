@@ -121,6 +121,8 @@ function setupChatEventHandlers() {
                             return Promise.resolve();
                         }
 
+                        console.log(`PROOFS: ${JSON.stringify(proofs)}`);
+
                         return proofManager.proofAddressAndSaveToDB(proofs, fromAddress);
                     })
                 });

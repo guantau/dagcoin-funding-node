@@ -5,18 +5,14 @@ module.exports = function (properties) {
     const fetcher = new DataFetcher(properties);
     const conf = require('byteballcore/conf.js');
     const http = require('http');
-    const DatabaseManager = require(`${__dirname}/../../../databaseManager`);
-    const dbManager = DatabaseManager.getInstance();
+    const dagcoinDbManager = require(`${__dirname}/../../../dagcoinDbManager`).getInstance();
 
     if (!properties.masterAddress) {
         throw Error(`NO masterAddress IN DataFetcher enoughDagcoins. PROPERTIES: ${properties}`);
     }
 
     fetcher.retrieveData = function () {
-        return dbManager.query(
-            'SELECT address FROM dagcoin_proofs WHERE master_address = ? AND proofed = 1',
-            [properties.masterAddress]
-        ).then((rows) => {
+        return dagcoinDbManager.getLinkedAddresses(properties.masterAddress).then((rows) => {
             const fundCheckPromises = [];
             fundCheckPromises.push(fetcher.getAddressDagcoinBalance(properties.masterAddress));
 

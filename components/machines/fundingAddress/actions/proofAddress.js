@@ -45,7 +45,10 @@ module.exports = function (properties) {
 
             return Promise.resolve(proofs);
         }).then((proofs) => {
-            proofManager.proofAddressBatch(proofs, properties.deviceAddress);
+            return proofManager.proofAddressBatch(proofs, properties.deviceAddress);
+        }).catch((error) => {
+            console.log(`ACTION proofAddress (${JSON.stringify(properties)}) DID NOT COMPLETE SUCCESSFULLY: ${error}`);
+            return Promise.resolve();
         });
     };
 

@@ -13,7 +13,9 @@ module.exports = function (properties) {
     }
 
     fetcher.retrieveData = function () {
-        dagcoinProtocolManager.sendRequestAndListen(properties.deviceAddress, 'have-dagcoins', {}).then((proofs) => {
+        dagcoinProtocolManager.sendRequestAndListen(properties.deviceAddress, 'have-dagcoins', {}).then((messageBody) => {
+            const proofs = messageBody.proofs;
+
             if (!proofs || proofs.length === 0) {
                 console.log(`REQUEST have-dagcoins DID NOT PROVIDE NEW ADDRESSES. CHECK WHETHER THERE ARE ERRORS`);
                 return Promise.resolve();

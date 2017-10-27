@@ -70,6 +70,24 @@ DagcoinProtocolManager.prototype.sendRequestAndListen = function (deviceAddress,
 
     const listeningPromise = self.timedPromises.listeningTimedPromise(
     	`dagcoin.response.${subject}`,
+		messageId,
+        deviceAddress,
+		30 * 1000,
+		`DID NOT RECEIVE A REPLY FOR ${JSON.stringify(messageBody)}`
+	);
+
+    console.log(`SENDING REQUEST ${subject} TO ${deviceAddress}`);
+
+    return this.sendMessage(deviceAddress, 'request', subject, messageBody, messageId).then(() => {
+        console.log(`LISTENING ${subject} FROM ${deviceAddress}`);
+
+    	return listeningPromise;
+	});
+};
+
+module.exports = DagcoinProtocolManager;
+
+/*
 		(message, fromAddress) => {
     		console.log(`CONDITION WITH ${JSON.stringify(message)} ID: ${messageId} FROM ${fromAddress}`);
     		if (fromAddress !== deviceAddress) {
@@ -95,18 +113,5 @@ DagcoinProtocolManager.prototype.sendRequestAndListen = function (deviceAddress,
 			console.log(`RETURNING ${JSON.stringify(message.messageBody.proofs)}`);
 
 			return message.messageBody.proofs;
-		},
-		30 * 1000,
-		`DID NOT RECEIVE A REPLY FOR ${JSON.stringify(messageBody)}`
-	);
-
-    console.log(`SENDING REQUEST ${subject} TO ${deviceAddress}`);
-
-    return this.sendMessage(deviceAddress, 'request', subject, messageBody, messageId).then(() => {
-        console.log(`LISTENING ${subject} FROM ${deviceAddress}`);
-
-    	return listeningPromise;
-	});
-};
-
-module.exports = DagcoinProtocolManager;
+		}
+ */

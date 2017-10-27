@@ -86,30 +86,46 @@ exports.nextId = function () {
  * @param timeout A timeout after which the promise naturally expires.
  * @param timeoutMessage An error message to be returned by reject when the timeout is met.
  */
-exports.listeningTimedPromise = function (event, condition, timeout, timeoutMessage) {
+exports.listeningTimedPromise = function (event, messageId, deviceAddress, timeout, timeoutMessage) {
     const eb = require('byteballcore/event_bus');
 
     const uniqueInternalEvent = `internal.dagcoin.${this.nextId()}`;
 
     const listener = function () {
-        for( let a in arguments) {
-            console.log(`ARGUMENT ${a}: ${arguments[a]}`);
-        }
+        const message = arguments[0];
+        const fromAddress = arguments[1];
 
-        let resolutionValue = null;
+        // emit parameters:
+        // 1. internal event name
+        // 2. resolution value
+        // 3. error
 
-        try {
-            resolutionValue = condition(...arguments);
-        } catch (e) {
-            console.error(`ERROR IN EVALUATING CONDITION: ${e.message}`, e.stack);
-        }
-
-        if (!resolutionValue) {
-            console.log(`IGNORING USELESS EVENT ${event}`);
+        if (!message) {
+            console.error(`MISSING message IN LISTENED EVENT ${event}`);
             return;
         }
 
-        eb.emit(uniqueInternalEvent, resolutionValue);
+        if (!fromAddress) {
+            console.error(`MISSING fromAddress IN LISTENED EVENT ${event}`);
+            return;
+        }
+
+        if (fromAddress !== deviceAddress) {
+            console.log(`IGNORING event IN LISTENER OF ${event}: NOT FOR ME (DIFFERENT DEVICE ID)`);
+            return;
+        }
+
+        if (message.id !== messageId) {
+            console.log(`IGNORING event IN LISTENER OF ${event}: NOT FOR ME (DIFFERENT MESSAGE ID)`);
+            return;
+        }
+
+        if (message.messageBody.error) {
+            eb.emit(uniqueInternalEvent, null, `${event} LISTENER ERROR: ${message.messageBody.error}`);
+            return;
+        }
+
+        eb.emit(uniqueInternalEvent, message.messageBody, null);
     };
 
     eb.on(event, listener);

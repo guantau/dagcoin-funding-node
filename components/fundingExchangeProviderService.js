@@ -558,7 +558,9 @@ FundingExchangeProvider.prototype.proofAuthors = function(fromAddress, authors) 
             addresses: addressesNeedingProofs
         };
 
-        return self.dagcoinProtocolManager.sendRequestAndListen(fromAddress, 'proofing', request).then((proofs) => {
+        return self.dagcoinProtocolManager.sendRequestAndListen(fromAddress, 'proofing', request).then((messageBody) => {
+            const proofs = messageBody.proofs;
+
             console.log(`PROOFS: ${JSON.stringify(proofs)}`);
 
             if (!proofs || proofs.length === 0) {

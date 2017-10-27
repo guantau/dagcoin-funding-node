@@ -24,7 +24,7 @@ module.exports = function (properties) {
                 // NO NEED OF FURTHER PROOFING
                 return Promise.resolve();
             } else {
-                return action.sendProofRequest()
+                return action.sendProofRequest();
             }
         });
     };

@@ -86,7 +86,7 @@ function setupChatEventHandlers() {
                 fundingAddressFsm.pingUntilOver(false).then(() => {
                     console.log(`FINISHED PINGING ${fundingAddressObject.shared_address}. CURRENT STATUS: ${fundingAddressFsm.getCurrentState().getName()}`);
                 });
-                followedAddress[fundingAddressObject] = fundingAddressFsm;
+                followedAddress[fundingAddressObject.shared_address] = fundingAddressFsm;
             }
         });
     });

@@ -28,13 +28,12 @@ function execute() {
               CURRENT_TIMESTAMP as created
             FROM
               shared_addresses sa,
-              shared_address_signing_paths sasp,
-              dagcoin_proofs dp
+              shared_address_signing_paths sasp 
+              left join dagcoin_proofs dp on dp.address =  sasp.address
             WHERE
                 sa.shared_address = sasp.shared_address
             AND sasp.address NOT IN (SELECT address FROM my_addresses)
-            AND sa.shared_address NOT IN (SELECT shared_address FROM dagcoin_funding_addresses)
-            AND dp.address =  sasp.address;`,
+            AND sa.shared_address NOT IN (SELECT shared_address FROM dagcoin_funding_addresses);`,
         []
     ).then((rows) => {
         console.log(`QUERY RESULT OF ROUTINE ${tag}: ${JSON.stringify(rows)}`);

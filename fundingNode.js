@@ -19,7 +19,7 @@ const dagcoinProtocolManager = new DagcoinProtocolManager();
 
 const fundsNeedingAddresses = new Array();
 
-const followedAddress = [];
+const followedAddress = {};
 
 if (conf.permanent_pairing_secret) {
     dbManager.query (
@@ -70,7 +70,7 @@ function setupChatEventHandlers() {
                 return Promise.resolve();
             }
 
-            if (followedAddress.indexOf(rows[0].shared_address) !== -1) {
+            if (followedAddress[rows[0].shared_address]) {
                 console.log(`ALREADY FOLLOWING ${rows[0].shared_address}`)
                 return Promise.resolve();
             }
@@ -79,7 +79,7 @@ function setupChatEventHandlers() {
 
             console.log(fundingAddressFsm.getCurrentState().getName());
 
-            followedAddress.push(rows[0].shared_address);
+            followedAddress[rows[0].shared_address] = fundingAddressFsm;
 
             return fundingAddressFsm.pingUntilOver(false);
         });
@@ -124,11 +124,11 @@ function setupChatEventHandlers() {
                         console.log(`PROOFS: ${JSON.stringify(proofs)}`);
 
                         return proofManager.proofAddressBatch(proofs, fromAddress);
-                    })
+                    });
                 });
             }
 
-            if (followedAddress.indexOf(rows[0].shared_address) !== -1) {
+            if (followedAddress[rows[0].shared_address]) {
                 console.log(`ALREADY FOLLOWING ${rows[0].shared_address}`);
                 return Promise.resolve();
             }
@@ -137,9 +137,11 @@ function setupChatEventHandlers() {
 
             console.log(fundingAddressFsm.getCurrentState().getName());
 
-            followedAddress.push(rows[0].shared_address);
+            followedAddress[rows[0].shared_address] = fundingAddressFsm;
 
             return fundingAddressFsm.pingUntilOver(false);
+        }).catch((error) => {
+            console.log(`COULD NOT LOAD THE FUNDING ADDRESS OF ${fromAddress} FOR ${JSON.stringify(message)}: ${error}`);
         });
     });
 
@@ -325,35 +327,7 @@ function fundSharedAddresses() {
     });
 }
 
-function loadFirstFundingAddress () {
-    let fundingAddressFsm;
-    dbManager.query(
-        `SELECT 
-            shared_address, master_address, master_device_address, definition_type, status, created, last_status_change, previous_status
-        FROM dagcoin_funding_addresses`, []
-    ).then((rows) => {
-        fundingAddressFsm = require('./components/machines/fundingAddress/fundingAddress')(rows[0]);
-        console.log(fundingAddressFsm.getCurrentState().getName());
-        accountManager.readAccount().then(() => {
-            for (let i = 0; i < 10; i++ ) {
-                try {
-                    accountManager.sendPaymentSequentially(rows[0].shared_address, 100).catch((e) => {
-                        console.error(e, e.stack);
-                    });
-                } catch (e) {
-                    console.error(e, e.stack);
-                }
-            }
-        });
-        return fundingAddressFsm.pingUntilOver(false);
-    }).then(() => {
-        console.log(fundingAddressFsm.getCurrentState().getName());
-    });
-}
-
 dbManager.checkOrUpdateDatabase().then(() => {
-    // loadFirstFundingAddress();
-
     accountManager.readAccount().then(
         () => {
             try {
@@ -375,7 +349,14 @@ dbManager.checkOrUpdateDatabase().then(() => {
 
                 fundingExchangeProvider.handleSharedPaymentRequest();
 
-                // setInterval(fundSharedAddresses, 60 * 1000);
+                setInterval(() => {
+                    console.log('STATUSES');
+                    console.log('--------------------');
+                    for (let address in followedAddress) {
+                        console.log(`${address} : ${followedAddress[address].getCurrentState().getName()}`)
+                    }
+                    console.log('--------------------');
+                }, 60 * 1000);
 
                 // SETTING UP THE LOOPS
                 require('./components/routines/evaluateProofs').start(5 * 1000, 60 * 1000);

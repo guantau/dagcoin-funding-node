@@ -14,6 +14,9 @@ const dbManager = DatabaseManager.getInstance();
 const ProofManager = require('./components/proofManager');
 const proofManager = new ProofManager();
 
+const DagcoinProtocolManager = require('./components/dagcoinProtocolManager');
+const dagcoinProtocolManager = new DagcoinProtocolManager();
+
 const fundsNeedingAddresses = new Array();
 
 const followedAddress = [];
@@ -99,7 +102,28 @@ function setupChatEventHandlers() {
             [fromAddress]
         ).then((rows) => {
             if (!rows || rows.length === 0) {
-                return Promise.resolve();
+                console.log(`REQUESTED TO LOAD A FUNDING ADDRESS NOT IN dagcoin_funding_addresses: ${fromAddress}`);
+
+                return dbManager.query(
+                    'SELECT shared_address FROM shared_address_signing_paths WHERE device_address = ?',
+                    [fromAddress]
+                ).then((rows) => {
+                    if (!rows || rows.length === 0) {
+                        console.log(`DEVICE ADDRESS ${fromAddress} IN NEITHER IN dagcoin_funding_addresses NOR IN shared_address_signing_paths`);
+                        return Promise.resolve();
+                    }
+
+                    return dagcoinProtocolManager.sendRequestAndListen(fromAddress, 'have-dagcoins', {}).then((messageBody) => {
+                        const proofs = messageBody.proofs;
+
+                        if (!proofs || proofs.length === 0) {
+                            console.log(`REQUEST have-dagcoins DID NOT PROVIDE NEW ADDRESSES FOR ${fromAddress}. CHECK WHETHER THERE ARE ERRORS`);
+                            return Promise.resolve();
+                        }
+
+                        return proofManager.proofAddressAndSaveToDB(proofs, fromAddress);
+                    })
+                });
             }
 
             if (followedAddress.indexOf(rows[0].shared_address) !== -1) {

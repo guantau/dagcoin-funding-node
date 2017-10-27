@@ -4,8 +4,7 @@
 const DatabaseManager = require('../databaseManager');
 const dbManager = DatabaseManager.getInstance();
 const promiseManager = require('../promiseManager');
-const ProofManager = require('../proofManager');
-const proofManager = new ProofManager();
+const proofManager = require('../proofManager').getInstance();
 
 const tag = 'evaluateProofs';
 

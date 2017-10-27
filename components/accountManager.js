@@ -1,5 +1,7 @@
 'use strict';
 
+let instance = null;
+
 // My module
 function AccountManager() {
     const self = this;
@@ -181,7 +183,7 @@ AccountManager.prototype.readAccount = function () {
             }
         });
     }).then(() => {
-        require('byteballcore/wallet.js'); // we don't need any of its functions but it listens for hubmessages
+        require('byteballcore/wallet.js'); // we don't need any of its functions but it listens for hub messages
 
         const keys = self.getKeys();
 
@@ -221,7 +223,7 @@ AccountManager.prototype.readAccount = function () {
                 if (!self.network.isCatchingUp()) {
                     self.consolidation.consolidate(self.walletId, self.getSigner());
                 }
-            }
+            };
             setInterval(consolidate, self.conf.CONSOLIDATION_INTERVAL);
             setTimeout(consolidate, 300 * 1000);
         }
@@ -372,3 +374,10 @@ AccountManager.prototype.emptySharedAddress = function (toBeEmptiedAddress) {
 };
 
 module.exports = AccountManager;
+module.exports.getInstance = function () {
+    if (!instance) {
+        instance = new AccountManager();
+    }
+
+    return instance;
+};

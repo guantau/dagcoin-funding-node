@@ -4,25 +4,16 @@ var conf = require('byteballcore/conf.js');
 var db = require('byteballcore/db.js');
 var eventBus = require('byteballcore/event_bus.js');
 
-const AccountManager = require('./components/accountManager');
-const accountManager = new AccountManager();
+const accountManager = require('./components/accountManager').getInstance();
+const dbManager = require('./components/databaseManager').getInstance();
+const proofManager = require('./components/proofManager').getInstance();
+const dagcoinProtocolManager = require('./components/dagcoinProtocolManager').getInstance();
+
 let fundingExchangeProvider = null;
-
-const DatabaseManager = require('./components/databaseManager');
-const dbManager = DatabaseManager.getInstance();
-
-const ProofManager = require('./components/proofManager');
-const proofManager = new ProofManager();
-
-const DagcoinProtocolManager = require('./components/dagcoinProtocolManager');
-const dagcoinProtocolManager = new DagcoinProtocolManager();
-
-const fundsNeedingAddresses = new Array();
-
 const followedAddress = {};
 
 if (conf.permanent_pairing_secret) {
-    dbManager.query (
+    dbManager.query(
         "INSERT " + db.getIgnore() + " INTO pairing_secrets (pairing_secret, is_permanent, expiry_date) VALUES (?, 1, '2038-01-01')",
         [conf.permanent_pairing_secret]
     );

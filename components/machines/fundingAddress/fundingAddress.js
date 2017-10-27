@@ -27,13 +27,17 @@ module.exports = function (addressObject) {
         [
             {
                 name: 'not-proofed',
-                fetchers: [
-                    {
-                        name: 'proofInDb',
-                        address: addressObject.master_address,
-                        deviceAddress: addressObject.master_device_address
-                    }
-                ]
+                evaluationPeriod: 120 * 1000,
+                actionsIn: [{
+                    name: 'proofAddress',
+                    address: addressObject.master_address,
+                    deviceAddress: addressObject.master_device_address
+                }],
+                fetchers: [{
+                    name: 'proofInDb',
+                    address: addressObject.master_address,
+                    deviceAddress: addressObject.master_device_address
+                }]
             },
             {
                 name: 'proofed-legacy',

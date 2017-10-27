@@ -3,10 +3,8 @@
 module.exports = function (properties) {
     const DataFetcher = require(`${__dirname}/../../../fsm/dataFetcher`);
     const fetcher = new DataFetcher(properties);
-    const DagcoinProtocolManager = require(`${__dirname}/../../../dagcoinProtocolManager`);
-    const dagcoinProtocolManager = new DagcoinProtocolManager();
-    const ProofManager = require(`${__dirname}/../../../proofManager`);
-    const proofManager = new ProofManager();
+    const dagcoinProtocolManager = require(`${__dirname}/../../../dagcoinProtocolManager`).getInstance();
+    const proofManager = require(`${__dirname}/../../../proofManager`).getInstance();
 
     if (!properties.deviceAddress) {
         throw Error(`NO deviceAddress IN DataFetcher newLoadedAddresses. PROPERTIES: ${properties}`);

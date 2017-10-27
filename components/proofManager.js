@@ -1,5 +1,7 @@
 'use strict';
 
+let instance = null;
+
 // My module
 function ProofManager() {
     this.ecdsaSig = require('byteballcore/signature');
@@ -260,3 +262,10 @@ ProofManager.prototype.proofAddressAndSaveToDB = function (proof, deviceAddress)
 };
 
 module.exports = ProofManager;
+module.exports.getInstance = function () {
+    if (!instance) {
+        instance = new ProofManager();
+    }
+
+    return instance;
+};

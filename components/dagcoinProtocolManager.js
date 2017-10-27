@@ -1,5 +1,7 @@
 'use strict';
 
+let instance = null;
+
 // My module
 function DagcoinProtocolManager () {
 	this.device = require('byteballcore/device');
@@ -86,6 +88,13 @@ DagcoinProtocolManager.prototype.sendRequestAndListen = function (deviceAddress,
 };
 
 module.exports = DagcoinProtocolManager;
+module.exports.getInstance = function () {
+    if (!instance) {
+        instance = new DagcoinProtocolManager();
+    }
+
+    return instance;
+};
 
 /*
 		(message, fromAddress) => {

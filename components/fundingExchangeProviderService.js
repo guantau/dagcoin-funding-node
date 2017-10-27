@@ -18,11 +18,9 @@ function FundingExchangeProvider(pairingString, xPrivKey) {
     const DiscoveryService = require('./discoveryService');
     this.discoveryService = new DiscoveryService();
 
-    const ProofManager = require('./proofManager');
-    this.proofManager = new ProofManager();
+    this.proofManager = require('./proofManager').getInstance();
 
-    const DagcoinProtocolManager = require('./dagcoinProtocolManager');
-    this.dagcoinProtocolManager = new DagcoinProtocolManager();
+    this.dagcoinProtocolManager = require('./dagcoinProtocolManager').getInstance();
 
     console.log(`pairingString: ${this.pairingString}`);
     console.log(`xPrivKey: ${this.xPrivKey}`);

@@ -3,8 +3,7 @@
 module.exports = function (properties) {
     const Action = require(`${__dirname}/../../../fsm/action`);
     const action = new Action(properties);
-    const AccountManager = require(`${__dirname}/../../../accountManager`);
-    const accountManager = new AccountManager();
+    const accountManager = require(`${__dirname}/../../../accountManager`).getInstance();
 
     if (!properties.sharedAddress) {
         throw Error(`NO sharedAddress IN Action setStatus. PROPERTIES: ${properties}`);
@@ -29,7 +28,7 @@ module.exports = function (properties) {
                     }, 60 * 1000);
                 });
             }
-        )
+        );
     };
 
     action.sendPayment = function () {

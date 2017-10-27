@@ -1,14 +1,11 @@
 /*jslint node: true */
 "use strict";
 
-const DatabaseManager = require('../databaseManager');
-const dbManager = DatabaseManager.getInstance();
+const dbManager = require('../databaseManager').getInstance();
 const promiseManager = require('../promiseManager');
 const eventBus = require('byteballcore/event_bus');
 
 const tag = 'transferSharedAddressesToFundingTable';
-
-const activeFundingAddressFsms = [];
 
 function execute() {
     return dbManager.query(            `

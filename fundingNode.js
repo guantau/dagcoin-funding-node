@@ -67,6 +67,7 @@ function setupChatEventHandlers() {
             }
 
             const fundingAddressFsm = require('./components/machines/fundingAddress/fundingAddress')(rows[0]);
+            fundingAddressFsm.start();
 
             console.log(fundingAddressFsm.getCurrentState().getName());
 
@@ -83,6 +84,7 @@ function setupChatEventHandlers() {
             } else {
                 const fundingAddressFsm = require('./components/machines/fundingAddress/fundingAddress')(fundingAddressObject);
                 console.log(`FUNDING FSM CREATED FOR ${JSON.stringify(fundingAddressObject)}`);
+                fundingAddressFsm.start();
                 fundingAddressFsm.pingUntilOver(false).then(() => {
                     console.log(`FINISHED PINGING ${fundingAddressObject.shared_address}. CURRENT STATUS: ${fundingAddressFsm.getCurrentState().getName()}`);
                 });
@@ -140,6 +142,7 @@ function setupChatEventHandlers() {
             }
 
             const fundingAddressFsm = require('./components/machines/fundingAddress/fundingAddress')(rows[0]);
+            fundingAddressFsm.start();
 
             console.log(fundingAddressFsm.getCurrentState().getName());
 

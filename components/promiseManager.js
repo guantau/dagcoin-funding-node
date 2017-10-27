@@ -143,12 +143,12 @@ exports.listeningTimedPromise = function (event, messageId, deviceAddress, timeo
     return this.timedPromise(promise, timeout, timeoutMessage)
         .then(
             (args) => {
-                console.log(`REMOVING THE LISTENER ${listener} FROM ${event}`);
+                console.log(`REMOVING THE LISTENER FROM ${event}, VALUE RECEIVED: ${JSON.stringify(args)}`);
                 eb.removeListener(event, listener);
                 return Promise.resolve(args);
             },
             (err) => {
-                console.log(`REMOVING THE LISTENER ${listener} FROM ${event}`);
+                console.log(`REMOVING THE LISTENER FROM ${event}, ERROR RECEIVED: ${err}`);
                 eb.removeListener(event, listener);
                 return Promise.reject(err);
             }

@@ -21,7 +21,7 @@ module.exports = function (properties) {
                 return Promise.resolve();
             }
 
-            return proofManager.proofAddressAndSaveToDB(proofs, properties.deviceAddress);
+            return proofManager.proofAddressBatch(proofs, properties.deviceAddress);
         }).then(
             () => {
                 return Promise.resolve(true);

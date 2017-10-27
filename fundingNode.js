@@ -123,7 +123,7 @@ function setupChatEventHandlers() {
 
                         console.log(`PROOFS: ${JSON.stringify(proofs)}`);
 
-                        return proofManager.proofAddressAndSaveToDB(proofs, fromAddress);
+                        return proofManager.proofAddressBatch(proofs, fromAddress);
                     })
                 });
             }

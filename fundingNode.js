@@ -85,6 +85,21 @@ function setupChatEventHandlers() {
         });
     });
 
+    eventBus.on('internal.dagcoin.addresses-to-follow', (fundingAddresses) => {
+        fundingAddresses.forEach((fundingAddressObject) => {
+            if (followedAddress[fundingAddressObject.shared_address]) {
+                console.log(`ALREADY FOLLOWING ${fundingAddressObject.shared_address}`)
+            } else {
+                const fundingAddressFsm = require('../machines/fundingAddress/fundingAddress')(fundingAddressObject);
+                console.log(`FUNDING FSM CREATED FOR ${JSON.stringify(fundingAddressObject)}`);
+                fundingAddressFsm.pingUntilOver(false).then(() => {
+                    console.log(`FINISHED PINGING ${fundingAddressObject.shared_address}. CURRENT STATUS: ${fundingAddressFsm.getCurrentState().getName()}`);
+                });
+                followedAddress[fundingAddressObject] = fundingAddressFsm;
+            }
+        });
+    });
+
     eventBus.on('dagcoin.request.link-address', (message, fromAddress) => {
         console.log(`DAGCOIN link-address REQUEST: ${JSON.stringify(message)} FROM ${fromAddress}`);
 
@@ -168,165 +183,6 @@ function setupChatEventHandlers() {
     });
 }
 
-function getSharedAddressBalance(sharedAddress) {
-    return new Promise((resolve) => {
-        db.query(
-            "SELECT asset, address, is_stable, SUM(amount) AS balance \n\
-            FROM outputs CROSS JOIN units USING(unit) \n\
-            WHERE is_spent=0 AND sequence='good' AND address = ? \n\
-            GROUP BY asset, address, is_stable \n\
-            UNION ALL \n\
-            SELECT NULL AS asset, address, 1 AS is_stable, SUM(amount) AS balance FROM witnessing_outputs \n\
-            WHERE is_spent=0 AND address = ? GROUP BY address \n\
-            UNION ALL \n\
-            SELECT NULL AS asset, address, 1 AS is_stable, SUM(amount) AS balance FROM headers_commission_outputs \n\
-            WHERE is_spent=0 AND address = ? GROUP BY address",
-            [sharedAddress, sharedAddress, sharedAddress],
-            function (rows) {
-                const assocBalances = {};
-
-                assocBalances["base"] = {stable: 0, pending: 0, total: 0};
-
-                for (var i = 0; i < rows.length; i++) {
-                    var row = rows[i];
-
-                    console.log(`SOMETHING FOR ${sharedAddress}: ${JSON.stringify(row)}`);
-
-                    var asset = row.asset || "base";
-
-                    if (!assocBalances[asset]) {
-                        assocBalances[asset] = {stable: 0, pending: 0, total: 0};
-                        console.log(`CREATED THE BALANCES ARRAY OF ADDRESS ${sharedAddress} FOR ASSET ${asset}`);
-                    }
-
-                    console.log(`UPDATING BALANCE OF ${sharedAddress} FOR ASSET ${asset}: ${row.is_stable ? 'stable' : 'pending'} ${row.balance}`);
-                    assocBalances[asset][row.is_stable ? 'stable' : 'pending'] += row.balance;
-                    assocBalances[asset]['total'] += row.balance;
-                }
-
-                resolve(assocBalances);
-            }
-        );
-    });
-}
-
-function fund() {
-    console.log('NEW FUNDING SESSION');
-
-    if (!fundsNeedingAddresses || fundsNeedingAddresses.length === 0) {
-        console.log('NO NEW ADDRESSES TO FUND');
-        return new Promise((resolve) => {
-            setTimeout(resolve, 30 * 1000);
-        }).then(() => {
-            return fund();
-        });
-    }
-
-    const sharedAddress = fundsNeedingAddresses.pop();
-
-    return accountManager.walletManager.readSingleAddress().then((myAddress) => {
-        // FIND OWNING REMOTE ADDRESS
-        return new Promise((resolve, reject) => {
-            db.query(
-                'SELECT address FROM shared_address_signing_paths WHERE shared_address = ? AND address <> ?',
-                [sharedAddress, myAddress],
-                (rows) => {
-                    if (!rows || rows.length === 0) {
-                        reject(`OWNER OF ${sharedAddress} NOT FOUND`);
-                    } else if (rows.length > 1) {
-                        reject(`TOO MANY OWNERs OF ${sharedAddress} FOUND: ${rows.length}`);
-                    } else {
-                        resolve(rows[0].address);
-                    }
-                }
-            );
-        });
-    }).then((remoteOwningAddress) => { // TODO: rewrite from here on. Should not wait here, should return fund and execute globally inside a loop
-        return new Promise((resolve, reject) => {
-            const http = require('http');
-
-            http.get(`http://localhost:9852/getAddressBalance?address=${remoteOwningAddress}`, (resp) => {
-                let data = '';
-
-                // A chunk of data has been received.
-                resp.on('data', (chunk) => {
-                    data += chunk;
-                });
-
-                // The whole response has been received. Print out the result.
-                resp.on('end', () => {
-                    try {
-                        const balance = JSON.parse(data);
-
-                        if (balance[conf.dagcoinAsset] && balance[conf.dagcoinAsset].stable >= 500000) {
-                            resolve(true);
-                        } else {
-                            console.log(`NOT ENOUGH DAGCOINS CONFIRMED ON ${remoteOwningAddress} FOR FUNDING ITS SHARED ADDRESS`);
-                            resolve(false);
-                        }
-                    } catch (e) {
-                        reject(`COULD NOT PARSE ${data} INTO A JSON OBJECT: ${e}`);
-                    }
-                });
-            }).on("error", (err) => {
-                reject(err.message);
-            });
-        });
-    }).then(
-        (hasEnoughDagcoins) => {
-            if (hasEnoughDagcoins) {
-                return accountManager.sendPayment(sharedAddress, 5000).then(
-                    () => {
-                        return new Promise((resolve) => {
-                            setTimeout(resolve, 30 * 1000);
-                        });
-                    },
-                    (err) => {
-                        console.log(err);
-                    }
-                );
-            } else {
-                console.log(`WILL NOT FUND ${sharedAddress}, THE REMOTE OWNER DOES NOT HAVE ENOUGH DAGCOINS`);
-                return Promise.resolve();
-            }
-        },
-        (err) => {
-            console.log(`AN ERROR OCCURRED: ${err}`);
-            return Promise.resolve();
-        }
-    ).then(() => {
-        return fund();
-    });
-}
-
-function fundSharedAddresses() {
-    // LOGGING IN IF THE CONNECTION WAS LOST
-    const device = require('byteballcore/device.js');
-    device.loginToHub();
-
-    db.query('SELECT shared_address FROM shared_addresses', [], (rows) => {
-        console.log('UPDATING FUND OF SHARED ADDRESSES');
-        for (let index in rows) {
-            const sharedAddress = rows[index].shared_address;
-
-            getSharedAddressBalance(sharedAddress).then((assocBalances) => {
-                console.log(`BALANCE FOR ${sharedAddress}: ${JSON.stringify(assocBalances)}`);
-
-                const baseBalance = assocBalances['base'].total || 0;
-
-                if (baseBalance < 5000) {
-                    if (fundsNeedingAddresses.indexOf(sharedAddress) < 0) {
-                        console.log(`ADDRESS ${sharedAddress} SHOULD BE FUNDED AS IT HAS JUST ${baseBalance} BYTES`);
-                        fundsNeedingAddresses.push(sharedAddress);
-                    }
-                }
-            });
-        }
-
-        console.log();
-    });
-}
-
 dbManager.checkOrUpdateDatabase().then(() => {
     accountManager.readAccount().then(
         () => {
@@ -371,6 +227,4 @@ dbManager.checkOrUpdateDatabase().then(() => {
             process.exit();
         }
     );
-
-    // fund();
 });

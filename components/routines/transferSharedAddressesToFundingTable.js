@@ -4,6 +4,7 @@
 const DatabaseManager = require('../databaseManager');
 const dbManager = DatabaseManager.getInstance();
 const promiseManager = require('../promiseManager');
+const eventBus = require('byteballcore/event_bus');
 
 const tag = 'transferSharedAddressesToFundingTable';
 
@@ -49,14 +50,7 @@ function execute() {
             return Promise.resolve();
         }
 
-        fundingAddresses.forEach((fundingAddressObject) => {
-            const fundingAddressFsm = require('../machines/fundingAddress/fundingAddress')(fundingAddressObject);
-            console.log(`FUNDING FSM CREATED FOR ${JSON.stringify(fundingAddressObject)}`);
-            fundingAddressFsm.pingUntilOver(false).then(() => {
-                console.log(`FINISHED PINGING ${fundingAddressObject.shared_address}. CURRENT STATUS: ${fundingAddressFsm.getCurrentState().getName()}`);
-            });
-            activeFundingAddressFsms.push(fundingAddressFsm);
-        });
+        eventBus.emit('internal.dagcoin.addresses-to-follow', fundingAddresses);
     });
 }
 

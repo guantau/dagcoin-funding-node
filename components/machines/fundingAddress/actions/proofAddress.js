@@ -40,10 +40,10 @@ module.exports = function (properties) {
             console.log(`PROOFS: ${JSON.stringify(proofs)}`);
 
             if (!proofs || proofs.length === 0) {
-                return Promise.reject(`NO PROOFS PROVIDED IN THE CLIENT RESPONSE FOR ${properties.address}`);
-            } else {
-                return Promise.resolve(proofs);
+                console.log(`NO PROOFS PROVIDED IN THE CLIENT RESPONSE FOR ${properties.address}`);
             }
+
+            return Promise.resolve(proofs);
         }).then((proofs) => {
             proofManager.proofAddressBatch(proofs, properties.deviceAddress);
         });

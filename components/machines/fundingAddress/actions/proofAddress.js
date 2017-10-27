@@ -31,7 +31,7 @@ module.exports = function (properties) {
 
     action.sendProofRequest = function () {
         const request = {
-            addresses: properties.address
+            addresses: [properties.address]
         };
 
         return dagcoinProtocolManager.sendRequestAndListen(properties.deviceAddress, 'proofing', request).then((messageBody) => {

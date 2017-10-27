@@ -53,7 +53,7 @@ function execute() {
             const fundingAddressFsm = require('../machines/fundingAddress/fundingAddress')(fundingAddressObject);
             console.log(`FUNDING FSM CREATED FOR ${JSON.stringify(fundingAddressObject)}`);
             fundingAddressFsm.pingUntilOver(false).then(() => {
-                console.log(`FINISHED PINGING ${fundingAddressObject.shared_address}. CURRENT STATUS: ${fundingAddressFsm.getCurrentState()}`);
+                console.log(`FINISHED PINGING ${fundingAddressObject.shared_address}. CURRENT STATUS: ${fundingAddressFsm.getCurrentState().getName()}`);
             });
             activeFundingAddressFsms.push(fundingAddressFsm);
         });

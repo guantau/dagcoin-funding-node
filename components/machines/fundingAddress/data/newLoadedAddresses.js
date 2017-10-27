@@ -3,8 +3,6 @@
 module.exports = function (properties) {
     const DataFetcher = require(`${__dirname}/../../../fsm/dataFetcher`);
     const fetcher = new DataFetcher(properties);
-    const DatabaseManager = require(`${__dirname}/../../../databaseManager`);
-    const dbManager = new DatabaseManager();
     const DagcoinProtocolManager = require(`${__dirname}/../../../dagcoinProtocolManager`);
     const dagcoinProtocolManager = new DagcoinProtocolManager();
     const ProofManager = require(`${__dirname}/../../../proofManager`);

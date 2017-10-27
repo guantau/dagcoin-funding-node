@@ -1,5 +1,7 @@
 'use strict';
 
+let instance = null;
+
 // My module
 function DatabaseManager() {
     this.db = require('byteballcore/db');
@@ -121,3 +123,10 @@ DatabaseManager.prototype.query = function (query, parameters) {
 };
 
 module.exports = DatabaseManager;
+module.exports.getInstance = function () {
+    if (!instance) {
+        instance = new DatabaseManager();
+    }
+
+    return instance;
+};

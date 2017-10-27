@@ -18,7 +18,7 @@ function AccountManager() {
     self.applicationDataDirectory = this.desktopApp.getAppDataDir();
 
     const DatabaseManager = require('./databaseManager');
-    self.dbManager = new DatabaseManager();
+    self.dbManager = DatabaseManager.getInstance();
 
     const ConfManager = require('./confManager');
     self.confManager = new ConfManager();

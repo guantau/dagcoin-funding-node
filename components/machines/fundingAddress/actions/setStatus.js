@@ -4,7 +4,7 @@ module.exports = function (properties) {
     const Action = require(`${__dirname}/../../../fsm/action`);
     const action = new Action(properties);
     const DatabaseManager = require(`${__dirname}/../../../databaseManager`);
-    const dbManager = new DatabaseManager();
+    const dbManager = DatabaseManager.getInstance();
 
     if (!properties.sharedAddress) {
         throw Error(`NO sharedAddress IN Action setStatus. PROPERTIES: ${properties}`);

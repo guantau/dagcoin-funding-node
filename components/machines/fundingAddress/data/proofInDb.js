@@ -4,7 +4,7 @@ module.exports = function (properties) {
     const DataFetcher = require(`${__dirname}/../../../fsm/dataFetcher`);
     const fetcher = new DataFetcher(properties);
     const DatabaseManager = require(`${__dirname}/../../../databaseManager`);
-    const dbManager = new DatabaseManager();
+    const dbManager = DatabaseManager.getInstance();
 
     if (!properties.address) {
         throw Error(`NO address IN DataFetcher proofInDb. PROPERTIES: ${properties}`);

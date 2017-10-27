@@ -10,28 +10,6 @@ function ProofManager() {
     this.active = false;
 }
 
-ProofManager.prototype.activate = function () {
-    if (this.active) {
-        console.log('ProofManager ALREADY ACTIVE');
-        return;
-    }
-
-    self.eventBus.on('dagcoin.request.proof-address', (message, deviceAddress) => {
-        console.log(`REQUEST TO PROOF AN ADDRESS FROM ${deviceAddress}: ${JSON.stringify(message)}`);
-
-        self.shareFundedAddress(deviceAddress, message).then(
-            (sharedAddress) => {
-                console.log(`NEW SHARED ADDRESS CREATED: ${sharedAddress}`);
-            },
-            (err) => {
-                console.log(`COULD NOT CREATE A SHARED ADDRESS: ${err}`);
-            }
-        );
-    });
-
-    this.active = true;
-};
-
 ProofManager.prototype.proofAddressBatch = function (proofAddressBatch, deviceAddress) {
     const self = this;
 

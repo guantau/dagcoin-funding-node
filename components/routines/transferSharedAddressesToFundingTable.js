@@ -2,7 +2,7 @@
 "use strict";
 
 const DatabaseManager = require('../databaseManager');
-const dbManager = new DatabaseManager();
+const dbManager = DatabaseManager.getInstance();
 const promiseManager = require('../promiseManager');
 
 const tag = 'transferSharedAddressesToFundingTable';

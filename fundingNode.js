@@ -9,7 +9,7 @@ const accountManager = new AccountManager();
 let fundingExchangeProvider = null;
 
 const DatabaseManager = require('./components/databaseManager');
-const dbManager = new DatabaseManager();
+const dbManager = DatabaseManager.getInstance();
 
 const ProofManager = require('./components/proofManager');
 const proofManager = new ProofManager();

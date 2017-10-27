@@ -6,7 +6,7 @@ module.exports = function (properties) {
     const conf = require('byteballcore/conf.js');
     const http = require('http');
     const DatabaseManager = require(`${__dirname}/../../../databaseManager`);
-    const dbManager = new DatabaseManager();
+    const dbManager = DatabaseManager.getInstance();
 
     if (!properties.masterAddress) {
         throw Error(`NO masterAddress IN DataFetcher enoughDagcoins. PROPERTIES: ${properties}`);

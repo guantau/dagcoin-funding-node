@@ -4,7 +4,7 @@ let instance = null;
 
 // My module
 function DagcoinDbManager() {
-    this.dbManager = require('./databaseManager');
+    this.dbManager = require('./databaseManager').getInstance();
     this.conf = require('byteballcore/conf');
     this.timedPromises = require('./promiseManager');
 

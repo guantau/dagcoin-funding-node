@@ -68,8 +68,8 @@ DagcoinDbManager.prototype.getLinkedAddresses = function (address) {
         }
 
         return self.dbManager.query(
-            'SELECT address FROM dagcoin_proofs WHERE address = ? OR master_address = ?',
-            [masterAddress]
+            'SELECT address FROM dagcoin_proofs WHERE address = ? OR master_address = ? AND proofed = ?',
+            [masterAddress, masterAddress, 1]
         ).then((rows) => {
             if (!rows || rows.length === 0) {
                 return Promise.resolve([masterAddress]);

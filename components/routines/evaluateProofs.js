@@ -17,7 +17,7 @@ function execute() {
     ).then((proofs) => {
         return proofManager.proofAddressBatch(proofs);
     }).then((proofingResult) => {
-        if (proofingResult.invalidBatch.length === 0) {
+        if (proofingResult.validBatch.length === 0) {
             console.log('NO VALID PROOFS THIS TIME');
             return Promise.resolve(proofingResult);
         }

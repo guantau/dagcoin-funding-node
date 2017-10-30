@@ -17,7 +17,7 @@ ProofManager.prototype.proofAddressBatch = function (proofAddressBatch, deviceAd
 
     if (!proofAddressBatch || proofAddressBatch.length === 0) {
         console.log('NOTHING TO PROOF');
-        return Promise.resolve({validbatch: [], invalidBatch: []});
+        return Promise.resolve({validBatch: [], invalidBatch: []});
     }
 
     const proof = proofAddressBatch.pop();
@@ -25,7 +25,7 @@ ProofManager.prototype.proofAddressBatch = function (proofAddressBatch, deviceAd
     return self.proofAddressBatch(proofAddressBatch).then((result) => {
         return self.proofAddressAndSaveToDB(proof, deviceAddress).then((valid) => {
             if (valid) {
-                result.validbatch.push(proof);
+                result.validBatch.push(proof);
             } else {
                 result.invalidBatch.push(proof);
             }

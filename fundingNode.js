@@ -29,6 +29,20 @@ function setupChatEventHandlers() {
         handlePairing(fromAddress);
     });
 
+    eventBus.on('internal.dagcoin.payment-approved', (deviceAddress) => {
+        for (let address in followedAddress) {
+            const addressFsm = followedAddress[address];
+
+            if (addressFsm.masterDeviceAddress === deviceAddress) {
+                console.log(`PINGING ${address}'S FSM BECAUSE A PAYMENT WAS DETECTED INVOLVING ITS MASTER DEVICE ADDRESS: ${deviceAddress}`);
+                setTimeout(() => {
+                    // Delay to give time to the system to detect a payment before evaluating if the shared address needs funding
+                    addressFsm.pingUntilOver(true);
+                }, 4000);
+            }
+        }
+    });
+
     // One device can send such message to check whether another device can exchange messages
     eventBus.on('dagcoin.is-connected', (message, fromAddress) => {
         console.log('DAGCOIN CONNECTION REQUEST');
@@ -117,22 +131,52 @@ function setupChatEventHandlers() {
                     [fromAddress]
                 ).then((rows) => {
                     if (!rows || rows.length === 0) {
-                        console.log(`DEVICE ADDRESS ${fromAddress} IN NEITHER IN dagcoin_funding_addresses NOR IN shared_address_signing_paths`);
+                        console.log(`DEVICE ADDRESS ${fromAddress} NEITHER IN dagcoin_funding_addresses NOR IN shared_address_signing_paths`);
                         return Promise.resolve();
                     }
 
-                    return dagcoinProtocolManager.sendRequestAndListen(fromAddress, 'have-dagcoins', {}).then((messageBody) => {
-                        const proofs = messageBody.proofs;
+                    const sharedAddress = rows[0].shared_address;
 
-                        if (!proofs || proofs.length === 0) {
-                            console.log(`REQUEST have-dagcoins DID NOT PROVIDE NEW ADDRESSES FOR ${fromAddress}. CHECK WHETHER THERE ARE ERRORS`);
-                            return Promise.resolve();
+                    return dagcoinProtocolManager.sendRequestAndListen(fromAddress, 'have-dagcoins', {}).then(
+                        (messageBody) => {
+                            const proofs = messageBody.proofs;
+
+                            if (!proofs || proofs.length === 0) {
+                                console.log(`REQUEST have-dagcoins DID NOT PROVIDE NEW ADDRESSES FOR ${fromAddress}. COULD BE LEGACY`);
+                                return Promise.resolve();
+                            }
+
+                            console.log(`PROOFS: ${JSON.stringify(proofs)}`);
+
+                            return proofManager.proofAddressBatch(proofs, fromAddress);
+                        },
+                        (error) => { //Most likely timeout because a legacy client cannot reply to this request
+                            console.log(`COULD NOT COMPLETE have-dagcoins REQUEST: ${error}`);
+                            return dbManager.query(
+                                'SELECT status FROM dagcoin_funding_addresses WHERE shared_address = ?',
+                                [sharedAddress]
+                            ).then((rows) => {
+                                if (!rows || rows.length === 0) {
+                                    throw Error (`COULD NOT FIND SHARED ADDRESS ${sharedAddress}`);
+                                }
+
+                                if (rows.length > 1) {
+                                    throw Error (`TOO MANY SHARED ADDRESSES FOR ${sharedAddress}: ${rows.length}`);
+                                }
+
+                                const newStatus = 'LEGACY';
+
+                                if (rows[0].status !== newStatus) {
+                                    return dbManager.query('UPDATE dagcoin_funding_addresses ' +
+                                        'SET status = ?, previous_status = ?, last_status_change = CURRENT_TIMESTAMP WHERE shared_address = ?',
+                                        [newStatus, rows[0].status, sharedAddress]
+                                    );
+                                } else {
+                                    return Promise.resolve();
+                                }
+                            });
                         }
-
-                        console.log(`PROOFS: ${JSON.stringify(proofs)}`);
-
-                        return proofManager.proofAddressBatch(proofs, fromAddress);
-                    });
+                    );
                 });
             }
 

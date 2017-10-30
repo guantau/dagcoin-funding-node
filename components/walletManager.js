@@ -10,7 +10,7 @@ function WalletManager () {
 
 WalletManager.prototype.getWalletId = function () {
 	return this.walletId;
-}
+};
 
 WalletManager.prototype.exists = function() {
 	const self = this;

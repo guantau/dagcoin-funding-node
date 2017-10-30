@@ -518,6 +518,7 @@ FundingExchangeProvider.prototype.handleSharedPaymentRequest = function () {
                                 //APPROVED if there is an output to the base address of some dagcoins
                                 createAndSendSignature();
                                 assocChoicesByUnit[unit] = "approve";
+                                self.eventBus.emit('internal.dagcoin.payment-approved', from_address);
                             } else { //NOT APPROVED
                                 refuseSignature();
                                 assocChoicesByUnit[unit] = "refuse";

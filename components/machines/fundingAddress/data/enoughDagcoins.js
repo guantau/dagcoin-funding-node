@@ -17,8 +17,8 @@ module.exports = function (properties) {
             fundCheckPromises.push(fetcher.getAddressDagcoinBalance(properties.masterAddress));
 
             if (rows && rows.length > 0) {
-                console.log(`CHECKING dagcoins AVAILABLE ON ${rows[i].address}`);
                for(let i = 0; i < rows.length; i+=1) {
+                   console.log(`CHECKING dagcoins AVAILABLE ON ${rows[i].address}`);
                    fundCheckPromises.push(fetcher.getAddressDagcoinBalance(rows[i].address));
                }
             }

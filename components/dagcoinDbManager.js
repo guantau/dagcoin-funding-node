@@ -81,6 +81,8 @@ DagcoinDbManager.prototype.getLinkedAddresses = function (address) {
                 addresses.push(rows[i].address);
             }
 
+            console.log(`ADDRESSES LINKED TO ${address}: ${JSON.stringify(addresses)}`);
+
             return Promise.resolve(addresses);
         });
     });

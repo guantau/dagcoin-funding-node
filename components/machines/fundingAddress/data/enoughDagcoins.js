@@ -35,7 +35,7 @@ module.exports = function (properties) {
             if (totalDagcoins >= 500000) {
                 return Promise.resolve(true);
             } else {
-                console.log(`NOT ENOUGH DAGCOINS CONFIRMED ON ${properties.masterAddress} FOR FUNDING ITS SHARED ADDRESS`);
+                console.log(`NOT ENOUGH DAGCOINS CONFIRMED ON ${properties.masterAddress} FOR FUNDING ITS SHARED ADDRESS: ${totalDagcoins}`);
                 return Promise.resolve(false);
             }
         });

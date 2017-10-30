@@ -182,7 +182,15 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
     console.log('STARTING THE ADDRESS GENERATION PROCESS');
 
     this.shareFundedAddressPromise = this.initDagcoinDestination().then((myAddress) => {
-        return self.proofManager.proofAddressAndSaveToDB(proof, remoteDeviceAddress).then(() => {
+        let promise = null;
+
+        if (proof.address_definition) {
+            promise = self.proofManager.proofAddressAndSaveToDB(proof, remoteDeviceAddress);
+        } else {
+            promise = Promise.resolve();
+        }
+
+        return promise.then(() => {
             return new Promise((resolve) => {
                 // CHECK IF THE SHARED ADDRESS FOR THE REQUESTOR ALREADY EXISTS
                 self.db.query(

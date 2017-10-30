@@ -182,6 +182,7 @@ function setupChatEventHandlers() {
 
             if (followedAddress[rows[0].shared_address]) {
                 console.log(`ALREADY FOLLOWING ${rows[0].shared_address}`);
+                followedAddress[rows[0].shared_address].pingUntilOver(false);
                 return Promise.resolve();
             }
 

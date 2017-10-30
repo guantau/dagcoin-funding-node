@@ -12,14 +12,14 @@ module.exports = function (properties) {
     }
 
     fetcher.retrieveData = function () {
-        return dagcoinDbManager.getLinkedAddresses(properties.masterAddress).then((rows) => {
+        return dagcoinDbManager.getLinkedAddresses(properties.masterAddress).then((addresses) => {
             const fundCheckPromises = [];
             fundCheckPromises.push(fetcher.getAddressDagcoinBalance(properties.masterAddress));
 
-            if (rows && rows.length > 0) {
-               for(let i = 0; i < rows.length; i+=1) {
-                   console.log(`CHECKING dagcoins AVAILABLE ON ${rows[i].address}`);
-                   fundCheckPromises.push(fetcher.getAddressDagcoinBalance(rows[i].address));
+            if (addresses && addresses.length > 0) {
+               for(let i = 0; i < addresses.length; i += 1) {
+                   console.log(`CHECKING dagcoins AVAILABLE ON ${addresses[i]}`);
+                   fundCheckPromises.push(fetcher.getAddressDagcoinBalance(addresses[i]));
                }
             }
 

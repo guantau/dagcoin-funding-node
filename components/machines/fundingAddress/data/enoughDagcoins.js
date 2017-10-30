@@ -17,6 +17,7 @@ module.exports = function (properties) {
             fundCheckPromises.push(fetcher.getAddressDagcoinBalance(properties.masterAddress));
 
             if (rows && rows.length > 0) {
+                console.log(`CHECKING dagcoins AVAILABLE ON ${rows[i].address}`);
                for(let i = 0; i < rows.length; i+=1) {
                    fundCheckPromises.push(fetcher.getAddressDagcoinBalance(rows[i].address));
                }
@@ -25,6 +26,8 @@ module.exports = function (properties) {
             return Promise.all(fundCheckPromises);
         }).then((values) => {
             let totalDagcoins = 0;
+
+            console.log(`VALUES RECEIVED: ${JSON.stringify(values)}`);
 
             if (values && values.length > 0) {
                 for (let i = 0; i < values.length; i += 1) {

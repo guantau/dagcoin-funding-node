@@ -1,8 +1,8 @@
 /*jslint node: true */
 "use strict";
-var conf = require('byteballcore/conf.js');
-var db = require('byteballcore/db.js');
-var eventBus = require('byteballcore/event_bus.js');
+const conf = require('byteballcore/conf.js');
+const eventBus = require('byteballcore/event_bus.js');
+eventBus.setMaxListeners(120);
 
 const accountManager = require('./components/accountManager').getInstance();
 const dbManager = require('./components/databaseManager').getInstance();
@@ -14,7 +14,7 @@ const followedAddress = {};
 
 if (conf.permanent_pairing_secret) {
     dbManager.query(
-        "INSERT " + db.getIgnore() + " INTO pairing_secrets (pairing_secret, is_permanent, expiry_date) VALUES (?, 1, '2038-01-01')",
+        "INSERT " + dbManager.getIgnore() + " INTO pairing_secrets (pairing_secret, is_permanent, expiry_date) VALUES (?, 1, '2038-01-01')",
         [conf.permanent_pairing_secret]
     );
 }

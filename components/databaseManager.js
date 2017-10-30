@@ -112,6 +112,10 @@ DatabaseManager.prototype.onReady = function () {
     });
 };
 
+DatabaseManager.prototype.getIgnore = function (){
+    return this.db.getIgnore();
+};
+
 /**
  * Executes query in the database sequentially.
  * @param query A SQL query with question marks (?) instead of parameters

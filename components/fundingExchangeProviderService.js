@@ -1,4 +1,4 @@
-"use strict"
+"use strict";
 
 function FundingExchangeProvider(pairingString, xPrivKey) {
     this.conf = require('byteballcore/conf.js');
@@ -510,7 +510,7 @@ FundingExchangeProvider.prototype.handleSharedPaymentRequest = function () {
                                 approve = proofingResult;
                             },
                             (error) => {
-                                console.error(`NO PROOF PROVIDED FOR AUTHORS ${authors} BY ${from_address} BECAUSE: ${error}`);
+                                console.log(`NO PROOF PROVIDED FOR AUTHORS ${JSON.stringify(authors)} BY ${from_address} BECAUSE: ${error}`);
                                 approve = false;
                             }
                         ).then(() => {
@@ -557,7 +557,7 @@ FundingExchangeProvider.prototype.proofAuthors = function(fromAddress, authors) 
 
         console.log(`ADDRESSES NEEDING PROOF: ${JSON.stringify(addressesNeedingProofs)}`);
 
-        if (!addressesNeedingProofs || addressesNeedingProofs.length == 0) {
+        if (!addressesNeedingProofs || addressesNeedingProofs.length === 0) {
             return Promise.resolve(null);
         }
 

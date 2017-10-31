@@ -1,16 +1,16 @@
 "use strict"
 
-module.exports = function (properties) {
-    const DataFetcher = require(`${__dirname}/../../../fsm/dataFetcher`);
-    const fetcher = new DataFetcher(properties);
+module.exports = function (properties, stateMachine, state) {
+    const Action = require(`${__dirname}/../../../fsm/action`);
+    const action = new Action(properties, stateMachine, state);
     const dagcoinProtocolManager = require(`${__dirname}/../../../dagcoinProtocolManager`).getInstance();
     const proofManager = require(`${__dirname}/../../../proofManager`).getInstance();
 
     if (!properties.deviceAddress) {
-        throw Error(`NO deviceAddress IN DataFetcher newLoadedAddresses. PROPERTIES: ${properties}`);
+        throw Error(`NO deviceAddress IN Action askMoreLinkedAddresses. PROPERTIES: ${JSON.stringify(properties)}`);
     }
 
-    fetcher.retrieveData = function () {
+    action.execute = function () {
         dagcoinProtocolManager.sendRequestAndListen(properties.deviceAddress, 'have-dagcoins', {}).then((messageBody) => {
             const proofs = messageBody.proofs;
 
@@ -18,6 +18,8 @@ module.exports = function (properties) {
                 console.log(`REQUEST have-dagcoins DID NOT PROVIDE NEW ADDRESSES. CHECK WHETHER THERE ARE ERRORS`);
                 return Promise.resolve();
             }
+
+            console.log(`PROOFING ${JSON.stringify(proofs)} WITH ${properties.deviceAddress}`);
 
             return proofManager.proofAddressBatch(proofs, properties.deviceAddress);
         }).then(
@@ -31,5 +33,5 @@ module.exports = function (properties) {
         );
     };
 
-    return fetcher;
+    return action;
 };

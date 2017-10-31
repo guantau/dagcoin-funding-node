@@ -255,11 +255,7 @@ State.prototype.addActionIn = function (action) {
         throw `Action DEFINED WITHOUT METHOD execute: ${JSON.stringify(action)}`;
     }
 
-    console.log(`ITS OK ${JSON.stringify(action)} NO?`);
-
     this.implementedActionsIn.push(action);
-
-    console.log(`${JSON.stringify(this.implementedActionsIn)}`);
 };
 
 State.prototype.addActionOut = function (action) {

@@ -20,7 +20,7 @@ exports.KEYS_FILENAME = 'keys.json';
 
 // DISCOVERY SERVICE PAIRING CODE
 // Testnet on PowerEdge
-exports.discoveryServicePairingCode = 'AnqLjlEMkQsoP6yZ/vDwT41F3IE6ItfggF0oxyYsUj42@byteball.org/bb-test#0000';
+exports.discoveryServicePairingCode = 'AnqLjlEMkQsoP6yZ/vDwT41F3IE6ItfggF0oxyYsUj42@testnetexplorer.dagcoin.org/wss/#0000';
 // Yary's public testnet server
 //exports.discoveryServicePairingCode = 'AhHZrVJAABB2fVTbO2CNZjvXjUi0QwaazL1uy5OMbn5O@byteball.org/bb-test#0000';
 // Local to Yary's machine

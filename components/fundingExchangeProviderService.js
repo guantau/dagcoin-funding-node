@@ -505,7 +505,18 @@ FundingExchangeProvider.prototype.handleSharedPaymentRequest = function () {
                             }
                         }
 
-                        return self.proofAuthors(from_address, authors).then(
+                        if (approve) {
+                            //APPROVED if there is an output to the base address of some dagcoins
+                            createAndSendSignature();
+                            assocChoicesByUnit[unit] = "approve";
+                            self.eventBus.emit('internal.dagcoin.payment-approved', from_address);
+                        } else { //NOT APPROVED
+                            refuseSignature();
+                            assocChoicesByUnit[unit] = "refuse";
+                        }
+
+                        unlock();
+                        /* return self.proofAuthors(from_address, authors).then(
                             (proofingResult) => {
                                 approve = proofingResult;
                             },
@@ -525,7 +536,7 @@ FundingExchangeProvider.prototype.handleSharedPaymentRequest = function () {
                             }
 
                             unlock();
-                        });
+                        }); */
                     }
                 ); // eachSeries
             });

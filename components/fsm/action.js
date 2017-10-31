@@ -1,9 +1,29 @@
 "use strict"
 
-function Action(properties) {
+function Action(properties, stateMachine, state) {
     if (!properties) {
         throw 'MISSING properties IN Action. THERE SHOULD BE AT LEAST A NAME {name: \'action-name\'}';
     }
+
+    if (properties.stateMachine != null) {
+        throw Error ('PROPERTY stateMachine IS RESERVED FOR INTERNAL USE');
+    }
+
+    if (properties.state != null) {
+        throw Error ('PROPERTY state IS RESERVED FOR INTERNAL USE');
+    }
+
+    if (stateMachine == null) {
+        throw Error (`PROPERTY stateMachine IS NOT SET IN Action ${properties.name}`);
+    }
+
+    this.stateMachine = stateMachine;
+
+    if (state == null) {
+        throw Error (`PROPERTY state IS NOT SET IN Action ${properties.name}`);
+    }
+
+    this.state = state;
 
     for (let property in properties) {
         this[property] = properties[property];
@@ -31,7 +51,7 @@ Action.prototype.call = function () {
         }
     }
 
-    return self.execute.apply(self, self.parameters);
+    return self.execute.apply(self, self.parameters, self.stateMachine, self.state);
 };
 
 Action.prototype.getName = function () {
@@ -46,6 +66,6 @@ Action.prototype.setStateMachine = function (stateMachine) {
     this.stateMachine = stateMachine;
 };
 
-module.exports = function (properties) {
-    return new Action(properties);
+module.exports = function (properties, stateMachine, state) {
+    return new Action(properties, stateMachine, state);
 };

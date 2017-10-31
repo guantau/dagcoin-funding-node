@@ -1,7 +1,23 @@
 "use strict"
 
 function StateMachine(properties, states, firstState, transitions) {
+    this.eventBus = require('byteballcore/event_bus');
+
     if (properties) {
+        if (properties.id != null) {
+            throw Error ('PROPERTY id IS RESERVED FOR INTERNAL USE');
+        }
+
+        if (properties.stateMachineIdCounter != null) {
+            throw Error ('PROPERTY stateMachineIdCounter IS RESERVED FOR INTERNAL USE');
+        }
+
+        if (properties.properties != null) {
+            throw Error ('PROPERTY properties IS RESERVED FOR INTERNAL USE');
+        }
+
+        this.properties = properties;
+
         for (let property in properties) {
             this[property] = properties[property];
         }
@@ -74,7 +90,7 @@ function StateMachine(properties, states, firstState, transitions) {
                             throw `Action IN PROPERTY execute MUST BE A METHOD: ${JSON.stringify(actionProperties)}`;
                         }
 
-                        action = new Action(actionProperties);
+                        action = new Action(actionProperties, this, state);
 
                         if (!action) {
                             throw `COULD NOT CREATE SIMPLE Action IN WITH ${JSON.stringify(actionProperties)}`;
@@ -85,7 +101,7 @@ function StateMachine(properties, states, firstState, transitions) {
                     } else {
                         const actionPath = `${this.directory}/actions/${actionProperties.name}`;
 
-                        action = require(actionPath)(actionProperties);
+                        action = require(actionPath)(actionProperties, this, state);
 
                         if (!action) {
                             throw `Action IN DEFINITION NOT FOUND IN ${actionPath}. AND NO execute METHOD DEFINED IN THE PROPERTIES. CHECK ${actionProperties}`;
@@ -115,7 +131,7 @@ function StateMachine(properties, states, firstState, transitions) {
                             throw `Action OUT PROPERTY execute MUST BE A METHOD: ${JSON.stringify(actionProperties)}`;
                         }
 
-                        action = new Action(actionProperties);
+                        action = new Action(actionProperties, this, state);
 
                         if (!action) {
                             throw `COULD NOT CREATE SIMPLE Action OUT WITH ${JSON.stringify(actionProperties)}`;
@@ -126,7 +142,7 @@ function StateMachine(properties, states, firstState, transitions) {
                     } else {
                         const actionPath = `${this.directory}/actions/${actionProperties.name}`;
 
-                        action = require(actionPath)(actionProperties);
+                        action = require(actionPath)(actionProperties, this, state);
 
                         if (!fetcher) {
                             throw `Action OUT DEFINITION NOT FOUND IN ${actionPath}. AND NO execute METHOD DEFINED IN THE PROPERTIES. CHECK ${actionProperties}`;
@@ -163,7 +179,7 @@ function StateMachine(properties, states, firstState, transitions) {
                         throw `DataFetcher PROPERTY retrieveData MUST BE A METHOD: ${JSON.stringify(fetcherProperties)}`;
                     }
 
-                    fetcher = new DataFetcher(fetcherProperties);
+                    fetcher = new DataFetcher(fetcherProperties, this, state);
 
                     if (!fetcher) {
                         throw `COULD NOT CREATE SIMPLE DataFetcher WITH ${JSON.stringify(fetcherProperties)}`;
@@ -172,17 +188,11 @@ function StateMachine(properties, states, firstState, transitions) {
                     fetcher.retrieveData = fetcherProperties.retrieveData;
                     fetcher.getName = () => {return fetcherProperties.name;}
                 } else {
-                    fetcher = require(`${this.directory}/data/${fetcherProperties.name}`)(fetcherProperties);
+                    fetcher = require(`${this.directory}/data/${fetcherProperties.name}`)(fetcherProperties, this, state);
 
                     if (!fetcher) {
                         throw `DataFetcher DEFINITION NOT FOUND IN ${this.directory}/data/${fetcherProperties.name}. AND NO retrieveData METHOD DEFINED IN THE PROPERTIES.`;
                     }
-                }
-
-                console.log('FETCHER PROPERTIES');
-
-                for (let o in fetcher) {
-                    console.log(`${o}: ${JSON.stringify(fetcher[o])}`);
                 }
 
                 state.addDataFetcher(fetcher);
@@ -253,14 +263,69 @@ function StateMachine(properties, states, firstState, transitions) {
 
         transition.setStateMachine(this);
     }
+
+    this.data = {};
+
+    this.id = this.nextId();
 }
+
+StateMachine.prototype.stateMachineIdCounter = 0;
+
+StateMachine.prototype.nextId = function () {
+    const id = this.stateMachineIdCounter;
+    this.stateMachineIdCounter += 1;
+    return id;
+};
+
+StateMachine.prototype.setData = function (key, value) {
+    if (key == null) {
+        throw Error(`WHILE CALLING setData WITHIN MACHINE ${this.name}: PARAMETER key IS NULL`);
+    }
+
+    if (value == null) {
+        console.log(`WHILE CALLING setData FOR ${key} WITHIN MACHINE ${this.name}: PARAMETER value IS NULL, UNSETTING ${key}`);
+        delete this.data[key];
+    } else {
+        this.data[key] = value;
+    }
+};
+
+StateMachine.prototype.getData = function (key, defaultValue) {
+    if (key == null) {
+        throw Error(`WHILE CALLING getData WITHIN MACHINE ${this.name}: PARAMETER key IS NULL`);
+    }
+
+    const value = this.data[key];
+
+    if (value == null && defaultValue != null) {
+        return defaultValue;
+    }
+
+    return value;
+};
 
 StateMachine.prototype.start = function () {
     this.currentState.enable();
 };
 
+StateMachine.prototype.waitForFinalState = function () {
+    const self = this;
+
+    if (this.currentState.isFinal) {
+        return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+        self.eventBus.once(`internal.dagcoin.fsm.${self.id}.final`, resolve);
+    });
+};
+
 StateMachine.prototype.ping = function () {
     const self = this;
+
+    if (self.currentState.isFinal) {
+        return Promise.resolve(false);
+    }
 
     return self.currentState.ping().then((triggeringTransition) => {
         if (!triggeringTransition) {
@@ -269,11 +334,15 @@ StateMachine.prototype.ping = function () {
 
         const previousState = self.currentState;
 
-        self.currentState.disable();
+        previousState.disable();
         self.currentState = triggeringTransition.getNextState();
         self.currentState.enable();
 
         console.log(`STATE MACHINE ${self.name} MOVED FROM ${previousState.getName()} TO ${self.currentState.getName()}`);
+
+        if (self.currentState.isFinal === true) {
+            self.eventBus.emit(`internal.dagcoin.fsm.${self.id}.final`);
+        }
 
         return Promise.resolve(true);
     });

@@ -30,16 +30,41 @@ function setupChatEventHandlers() {
     });
 
     eventBus.on('internal.dagcoin.payment-approved', (deviceAddress) => {
+        let sharedAddressJustUsed = null;
+
         for (let address in followedAddress) {
             const addressFsm = followedAddress[address];
 
             if (addressFsm.masterDeviceAddress === deviceAddress) {
-                console.log(`PINGING ${address}'S FSM BECAUSE A PAYMENT WAS DETECTED INVOLVING ITS MASTER DEVICE ADDRESS: ${deviceAddress}`);
-                setTimeout(() => {
-                    // Delay to give time to the system to detect a payment before evaluating if the shared address needs funding
-                    addressFsm.pingUntilOver(true);
-                }, 4000);
+                sharedAddressJustUsed = addressFsm;
             }
+        }
+
+        if (sharedAddressJustUsed == null) { //NEEDS TO BE LOADED
+            dbManager.query(
+                'SELECT shared_address, master_address, master_device_address, definition_type, ' +
+                'status, created, last_status_change, previous_status FROM dagcoin_funding_addresses WHERE master_device_address = ?',
+                [deviceAddress]
+            ).then((rows) => {
+                if (!rows || rows.length === 0) {
+                    console.log(`REQUESTED TO LOAD A FUNDING ADDRESS NOT IN dagcoin_funding_addresses: ${deviceAddress}`);
+                } else {
+                    const fundingAddressFsm = require('./components/machines/fundingAddress/fundingAddress')(rows[0]);
+                    fundingAddressFsm.start();
+
+                    console.log(fundingAddressFsm.getCurrentState().getName());
+
+                    followedAddress[rows[0].shared_address] = fundingAddressFsm;
+
+                    fundingAddressFsm.pingUntilOver(false);
+                }
+            });
+        } else {
+            console.log(`PINGING ${sharedAddressJustUsed.shared_address}'S FSM BECAUSE A PAYMENT WAS DETECTED INVOLVING ITS MASTER DEVICE ADDRESS: ${deviceAddress}`);
+            setTimeout(() => {
+                // Delay to give time to the system to detect a payment before evaluating if the shared address needs funding
+                sharedAddressJustUsed.pingUntilOver(true);
+            }, 4000);
         }
     });
 

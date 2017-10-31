@@ -1,9 +1,29 @@
 "use strict"
 
-function DataFetcher(properties) {
+function DataFetcher(properties, stateMachine, state) {
     if (!properties) {
         throw 'MISSING properties IN DataFetcher. THERE SHOULD BE AT LEAST A NAME {name: \'data-fetcher-name\'}';
     }
+
+    if (properties.stateMachine != null) {
+        throw Error ('PROPERTY stateMachine IS RESERVED FOR INTERNAL USE');
+    }
+
+    if (properties.state != null) {
+        throw Error ('PROPERTY state IS RESERVED FOR INTERNAL USE');
+    }
+
+    if (stateMachine == null) {
+        throw Error (`PROPERTY stateMachine IS NOT SET IN DataFetcher ${properties.name}`);
+    }
+
+    this.stateMachine = stateMachine;
+
+    if (state == null) {
+        throw Error (`PROPERTY state IS NOT SET IN DataFetcher ${properties.name}`);
+    }
+
+    this.state = state;
 
     for (let property in properties) {
         this[property] = properties[property];
@@ -46,6 +66,6 @@ DataFetcher.prototype.setStateMachine = function (stateMachine) {
     this.stateMachine = stateMachine;
 };
 
-module.exports = function (properties) {
-    return new DataFetcher(properties);
+module.exports = function (properties, stateMachine, state) {
+    return new DataFetcher(properties, stateMachine, state);
 };

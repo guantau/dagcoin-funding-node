@@ -1,8 +1,8 @@
 "use strict"
 
-module.exports = function (properties) {
-    const DataFetcher = require(`${__dirname}/../../../fsm/dataFetcher`);
-    const fetcher = new DataFetcher(properties);
+module.exports = function (properties, stateMachine, state) {
+    const DataFetcher = require(`${__dirname}/../../../fsm/dataFetcher`, stateMachine, state);
+    const fetcher = new DataFetcher(properties, stateMachine, state);
     const DatabaseManager = require(`${__dirname}/../../../databaseManager`);
     const dbManager = DatabaseManager.getInstance();
 

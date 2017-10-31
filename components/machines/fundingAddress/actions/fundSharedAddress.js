@@ -1,8 +1,8 @@
 "use strict"
 
-module.exports = function (properties) {
+module.exports = function (properties, stateMachine, state) {
     const Action = require(`${__dirname}/../../../fsm/action`);
-    const action = new Action(properties);
+    const action = new Action(properties, stateMachine, state);
     const accountManager = require(`${__dirname}/../../../accountManager`).getInstance();
 
     if (!properties.sharedAddress) {

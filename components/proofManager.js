@@ -22,7 +22,7 @@ ProofManager.prototype.proofAddressBatch = function (proofAddressBatch, deviceAd
 
     const proof = proofAddressBatch.pop();
 
-    return self.proofAddressBatch(proofAddressBatch).then((result) => {
+    return self.proofAddressBatch(proofAddressBatch, deviceAddress).then((result) => {
         return self.proofAddressAndSaveToDB(proof, deviceAddress).then((valid) => {
             if (valid) {
                 result.validBatch.push(proof);

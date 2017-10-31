@@ -12,7 +12,7 @@ exports.bLight = true;
 exports.storage = 'sqlite';
 
 exports.deviceName = 'Dev-Funding-Node';
-exports.hub = 'byteball.org/bb-test';
+exports.hub = 'testnetexplorer.dagcoin.org/wss/';
 exports.permanent_pairing_secret = 'L51iMkzcw8Lv';
 exports.control_addresses = ['DEVICE ALLOWED TO CHAT'];
 exports.payout_address = 'WHERE THE MONEY CAN BE SENT TO';
@@ -24,7 +24,7 @@ exports.KEYS_FILENAME = 'keys.json';
 // Yary's public testnet server
 // exports.discoveryServicePairingCode = 'AhHZrVJAABB2fVTbO2CNZjvXjUi0QwaazL1uy5OMbn5O@byteball.org/bb-test#0000';
 // Local to Yary's machine
-exports.discoveryServicePairingCode = 'A8EImXA5RtFDBstX3u1CzcVmcKm8jmBBYlMm93FAHQ0z@byteball.org/bb-test#0000';
+exports.discoveryServicePairingCode = 'A8EImXA5RtFDBstX3u1CzcVmcKm8jmBBYlMm93FAHQ0z@testnetexplorer.dagcoin.org/wss/#0000';
 
 // where logs are written to (absolute path).  Default is log.txt in app data directory
 //exports.LOG_FILENAME = '/dev/null';

@@ -1,5 +1,6 @@
 /*jslint node: true */
 "use strict";
+const Raven = require('raven');
 const conf = require('byteballcore/conf.js');
 const eventBus = require('byteballcore/event_bus.js');
 eventBus.setMaxListeners(120);
@@ -11,6 +12,13 @@ const dagcoinProtocolManager = require('./components/dagcoinProtocolManager').ge
 
 let fundingExchangeProvider = null;
 const followedAddress = {};
+
+if (conf.sentryUrl) {
+  Raven.config(conf.sentryUrl, {
+    sendTimeout: 5,
+    environment: conf.environment
+  }).install();
+}
 
 if (conf.permanent_pairing_secret) {
     dbManager.query(
@@ -116,6 +124,7 @@ function setupChatEventHandlers() {
                 return fundingAddressFsm.pingUntilOver(false);
             } catch (e) {
                 console.error(e, e.stack);
+                Raven.captureException(e);
             }
         });
     });
@@ -287,11 +296,13 @@ dbManager.checkOrUpdateDatabase().then(() => {
                 require('./components/routines/transferSharedAddressesToFundingTable').start(10 * 1000, 60 * 1000);
             } catch (e) {
                 console.error(e, e.stack);
+                Raven.captureException(e);
                 process.exit();
             }
         },
         (err) => {
             console.log(`COULD NOT START: ${err}`);
+            Raven.captureException(err);
             process.exit();
         }
     );

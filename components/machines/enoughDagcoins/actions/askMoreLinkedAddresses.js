@@ -1,7 +1,7 @@
 "use strict"
 
 module.exports = function (properties, stateMachine, state) {
-    const Action = require(`${__dirname}/../../../fsm/action`);
+    const Action = require('dagcoin-fsm/action');
     const action = new Action(properties, stateMachine, state);
     const dagcoinProtocolManager = require(`${__dirname}/../../../dagcoinProtocolManager`).getInstance();
     const proofManager = require(`${__dirname}/../../../proofManager`).getInstance();

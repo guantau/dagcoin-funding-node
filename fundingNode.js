@@ -105,14 +105,18 @@ function setupChatEventHandlers() {
                 return Promise.resolve();
             }
 
-            const fundingAddressFsm = require('./components/machines/fundingAddress/fundingAddress')(rows[0]);
-            fundingAddressFsm.start();
+            try {
+                const fundingAddressFsm = require('./components/machines/fundingAddress/fundingAddress')(rows[0]);
+                fundingAddressFsm.start();
 
-            console.log(fundingAddressFsm.getCurrentState().getName());
+                console.log(fundingAddressFsm.getCurrentState().getName());
 
-            followedAddress[rows[0].shared_address] = fundingAddressFsm;
+                followedAddress[rows[0].shared_address] = fundingAddressFsm;
 
-            return fundingAddressFsm.pingUntilOver(false);
+                return fundingAddressFsm.pingUntilOver(false);
+            } catch (e) {
+                console.error(e, e.stack);
+            }
         });
     });
 

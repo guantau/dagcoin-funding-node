@@ -42,6 +42,7 @@ exports.passPhrase = '123';
 exports.dagcoinAsset = 'B9dw3C3gMC+AODL/XqWjFh9jFe31jS08yf2C3zl8XGg=';
 
 exports.MIN_PAYMENT_DELAY = 2 * 1000; // How many millis before starting a new payment after completing the previous one
+exports.MIN_RETRY_PAYMENT_DELAY = 60 * 1000; // How many millis before retrying a failed payment
 exports.MIN_STABLE_BYTES_ON_MAIN_BEFORE_FUNDING = 2000; //How many bytes stable on the main address before considering starting a payment
 exports.MAIN_ADDRESS_FUNDS_INSPECTION_PERIOD = 10 * 1000; //How often to inspect the database to update the information on the main address funds
 

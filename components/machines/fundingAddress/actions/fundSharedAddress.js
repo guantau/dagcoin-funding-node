@@ -14,7 +14,7 @@ module.exports = function (properties, stateMachine, state) {
     };
 
     action.repeatPayment = function () {
-        action.sendPayment().then(
+        return action.sendPayment().then(
             () => {
                 return Promise.resolve();
             },

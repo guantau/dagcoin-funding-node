@@ -55,7 +55,7 @@ FundingExchangeProvider.prototype.activate = function () {
         }
     }).then(() => {
         console.log("ADDING REACTION TO dagcoin.request.share-funded-address");
-        self.eventBus.on('dagcoin.request.share-funded-address', (message, deviceAddress) => {
+        self.eventBus.on('dagcoin.request.share-funded-address', (deviceAddress, message) => {
             console.log(`REQUEST TO SHARE AN ADDRESS FROM ${deviceAddress}: ${JSON.stringify(message)}`);
             self.shareFundedAddress(deviceAddress, message).then(
                 (sharedAddress) => {

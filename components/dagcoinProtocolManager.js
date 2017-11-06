@@ -63,7 +63,7 @@ DagcoinProtocolManager.prototype.sendResponse = function (deviceAddress, subject
     return this.sendMessage(deviceAddress, 'response', subject, messageBody, messageId);
 };
 
-DagcoinProtocolManager.prototype.sendRequestAndListen = function (deviceAddress, subject, messageBody) {
+/* DagcoinProtocolManager.prototype.sendRequestAndListen = function (deviceAddress, subject, messageBody) {
 	const self = this;
 
     const messageId = self.nextMessageId();
@@ -85,7 +85,7 @@ DagcoinProtocolManager.prototype.sendRequestAndListen = function (deviceAddress,
 
     	return listeningPromise;
 	});
-};
+}; */
 
 module.exports = DagcoinProtocolManager;
 module.exports.getInstance = function () {
@@ -95,32 +95,3 @@ module.exports.getInstance = function () {
 
     return instance;
 };
-
-/*
-		(message, fromAddress) => {
-    		console.log(`CONDITION WITH ${JSON.stringify(message)} ID: ${messageId} FROM ${fromAddress}`);
-    		if (fromAddress !== deviceAddress) {
-    			console.log(`INCOMPATIBLE DEVICE ADDRESSES: ${fromAddress} : ${deviceAddress}`);
-    			return null;
-			}
-
-			if (message.id !== messageId) {
-                console.log(`INCOMPATIBLE MESSAGE IDs: ${message.id} : ${messageId}`);
-    			return null;
-			}
-
-			if (message.messageBody.error) {
-                console.log(`ERROR DETECTED: ${message.messageBody.error}`);
-    			throw Error(message.messageBody.error);
-			}
-
-			if (!message.messageBody.proofs || message.messageBody.proofs.length == 0) {
-                console.log(`NO PROOFS PROVIDED`);
-                return null;
-			}
-
-			console.log(`RETURNING ${JSON.stringify(message.messageBody.proofs)}`);
-
-			return message.messageBody.proofs;
-		}
- */

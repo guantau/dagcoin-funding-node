@@ -9,6 +9,7 @@ function DiscoveryService() {
     this.db = require('byteballcore/db.js');
     this.discoveryServiceAddresses = [];
     this.discoveryServiceAvailabilityCheckingPromise = null;
+    this.fs = new FileSystem();
 }
 
 DiscoveryService.prototype.messages = {

@@ -9,6 +9,7 @@ exports.bLight = true;
 exports.environment='test';
 
 exports.storage = 'sqlite';
+exports.sentryUrl = 'https://7169094cd11e474682fef59e8c840d67:674071c825054e109584f5d1a6139afc@sentry.io/238680';
 
 exports.deviceName = 'Testnet-Funding-Node';
 exports.hub = 'byteball.org/bb-test';

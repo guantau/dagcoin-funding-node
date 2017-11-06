@@ -26,12 +26,13 @@
     "secp256k1": "secp256k1/js"
   },
   "dependencies": {
-    "byteballcore": "^0.2.9",
     "bitcore-lib": "^0.13.14",
     "bitcore-mnemonic": "~1.0.0",
-    "json-rpc2": "^1.0.2",
+    "byteballcore": "^0.2.9",
+    "dagcoin-fsm": "^0.0.2",
     "db-migrate": "^0.10.0-beta.24",
     "db-migrate-sqlite3": "^0.2.1",
-    "dagcoin-fsm": "^0.0.2"
+    "json-rpc2": "^1.0.2",
+    "raven": "^2.2.1"
   }
 }

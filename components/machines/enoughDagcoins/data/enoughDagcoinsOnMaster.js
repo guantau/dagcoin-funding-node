@@ -1,5 +1,5 @@
 "use strict"
-
+const Raven = require('raven');
 module.exports = function (properties, stateMachine, state) {
     const DataFetcher = require('dagcoin-fsm/dataFetcher');
     const fetcher = new DataFetcher(properties, stateMachine, state);
@@ -39,11 +39,15 @@ module.exports = function (properties, stateMachine, state) {
                             resolve(0);
                         }
                     } catch (e) {
-                        reject( `COULD NOT PARSE ${data} INTO A JSON OBJECT: ${e}`);
+                        const message = `COULD NOT PARSE ${data} INTO A JSON OBJECT: ${e}`;
+                        Raven.captureException(message);
+                        reject(message);
                     }
                 });
             }).on("error", (err) => {
-                reject(`NO RESPONSE FROM THE HUB ABOUT AVAILABLE DAGCOINS: ${err.message}`);
+              const message = `NO RESPONSE FROM THE HUB ABOUT AVAILABLE DAGCOINS: ${err.message}`;
+              Raven.captureException(message);
+              reject(message);
             });
         });
     };

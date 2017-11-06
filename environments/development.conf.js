@@ -8,7 +8,6 @@ exports.environment='dev';
 exports.bServeAsHub = false;
 exports.bLight = true;
 
-
 exports.storage = 'sqlite';
 
 exports.deviceName = 'Dev-Funding-Node';

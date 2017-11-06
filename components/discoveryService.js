@@ -1,4 +1,6 @@
 'use strict';
+const Raven = require('raven');
+
 function DiscoveryService() {
     const FileSystem = require('./fileSystemManager');
 
@@ -69,7 +71,9 @@ DiscoveryService.prototype.makeSureDiscoveryServiceIsConnected = function () {
             try {
                 this.device.sendMessageToDevice(discoveryServiceDeviceAddress, 'text', JSON.stringify(keepAlive));
             } catch (e) {
-                console.log(`EXCEPTION WHILE SENDIN A MESSAGE TO DEVICE ${fromAddress}: ${e}`);
+              const message = `EXCEPTION WHILE SENDIN A MESSAGE TO DEVICE ${fromAddress}: ${e}`
+                console.log(message);
+                Raven.captureException(message);
             }
 
             const attempts = 12;

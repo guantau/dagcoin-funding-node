@@ -7,9 +7,6 @@ function DiscoveryService() {
     this.eventBus = require('byteballcore/event_bus.js');
     this.device = require('byteballcore/device.js');
     this.db = require('byteballcore/db.js');
-    this.discoveryServiceAddresses = [];
-    this.discoveryServiceAvailabilityCheckingPromise = null;
-    this.fs = new FileSystem();
 }
 
 DiscoveryService.prototype.messages = {
@@ -26,34 +23,6 @@ DiscoveryService.prototype.sendMessageAndListen = function (subject, message) {
 
     const self = this;
 
-    /* const messageString = JSON.stringify(message);
-    const messageId = this.hashCode(messageString + new Date());
-    message.id = messageId;
-
-    const listeningPromise = this.listenToMessage(message.messageType, messageId);
-
-    this.makeSureDiscoveryServiceIsConnected().then(() => {
-        return new Promise((resolve, reject) => {
-            this.device.sendMessageToDevice (
-                self.discoveryServiceDeviceAddress,
-                'text',
-                JSON.stringify(message),
-                {
-                    onSaved: function () {
-                        console.log(`A ${message.messageType} MESSAGE WAS SAVED INTO THE DATABASE`);
-                    },
-                    ifOk: function () {
-                        resolve();
-                    },
-                    ifError: function (err) {
-                        reject(`COULD NOT DELIVER A ${message.messageType} MESSAGE. REASON: ${err}`)
-                    }
-                }
-            );
-        });
-    });
-
-    return listeningPromise;*/
     return self.deviceManager.makeSureDeviceIsConnected(this.discoveryServicePairingCode).then((deviceAddress) => {
         self.discoveryServiceDeviceAddress = deviceAddress;
         return self.deviceManager.sendRequestAndListen(deviceAddress, subject, message);

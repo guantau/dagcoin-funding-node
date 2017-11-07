@@ -5,11 +5,11 @@ module.exports = function (properties, stateMachine, state) {
     const fetcher = new DataFetcher(properties, stateMachine, state);
 
     if (!properties.masterAddress) {
-        throw Error(`NO masterAddress IN DataFetcher enoughDagcoins. PROPERTIES: ${properties}`);
+        throw Error(`NO masterAddress IN DataFetcher enoughDagcoins. PROPERTIES: ${JSON.stringify(properties)}`);
     }
 
     if (!properties.deviceAddress) {
-        throw Error(`NO deviceAddress IN DataFetcher enoughDagcoins. PROPERTIES: ${properties}`);
+        throw Error(`NO deviceAddress IN DataFetcher enoughDagcoins. PROPERTIES: ${JSON.stringify(properties)}`);
     }
 
     fetcher.retrieveData = function () {

@@ -197,7 +197,7 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
                 [remoteAddress, remoteDeviceAddress]
             ).then((rows) => {
                 if (rows && rows.length > 0) {
-                    return Promise.resolve(rows[0].sharedAddress);
+                    return Promise.resolve(rows[0].shared_address);
                 } else {
                     return Promise.resolve(null);
                 }

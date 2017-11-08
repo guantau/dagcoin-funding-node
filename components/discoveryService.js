@@ -18,43 +18,29 @@ DiscoveryService.prototype.messages = {
     updateSettings: 'UPDATE_SETTINGS'
 };
 
-DiscoveryService.prototype.sendMessageAndListen = function (subject, message) {
-    console.log(`SENDING A ${message.title} MESSAGE TO THE DISCOVERY SERVICE`);
-
+DiscoveryService.prototype.init = function () {
     const self = this;
 
     return self.deviceManager.makeSureDeviceIsConnected(this.discoveryServicePairingCode).then((deviceAddress) => {
         self.discoveryServiceDeviceAddress = deviceAddress;
-        return self.deviceManager.sendRequestAndListen(deviceAddress, subject, message);
-    })
+        return Promise.resolve();
+    });
 };
 
 DiscoveryService.prototype.startingTheBusiness = function (pairCode) {
-    return this.sendMessageAndListen(this.messages.startingTheBusiness, { pairCode });
+    return this.deviceManager.sendRequestAndListen(this.discoveryServiceDeviceAddress, this.messages.startingTheBusiness, { pairCode });
 };
 
 DiscoveryService.prototype.aliveAndWell = function (pairCode) {
-    let messageBody = {};
-
-    if (pairCode) {
-        messageBody.pairCode = pairCode;
-    }
-
-    return this.sendMessageAndListen(this.messages.aliveAndWell, messageBody);
+    return this.deviceManager.sendRequestAndListen(this.discoveryServiceDeviceAddress, this.messages.aliveAndWell, { pairCode });
 };
 
 DiscoveryService.prototype.updateSettings = function (settings) {
-    let messageBody = {};
-
-    if (settings) {
-        messageBody.settings = settings;
-    }
-
-    return this.sendMessageAndListen(this.messages.updateSettings, messageBody);
+    return this.deviceManager.sendRequestAndListen(this.discoveryServiceDeviceAddress, this.messages.updateSettings, { settings });
 };
 
 DiscoveryService.prototype.outOfBusiness = function () {
-    return this.sendMessageAndListen(this.messages.outOfBusiness, {});
+    return this.deviceManager.sendRequestAndListen(this.discoveryServiceDeviceAddress, this.messages.outOfBusiness, {});
 };
 
 module.exports = DiscoveryService;

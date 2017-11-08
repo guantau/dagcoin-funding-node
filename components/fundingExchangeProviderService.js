@@ -43,7 +43,9 @@ FundingExchangeProvider.prototype.activate = function () {
 
     console.log('GOING TO START THE BUSINESS');
 
-    return this.discoveryService.startingTheBusiness(this.pairingString).then((response) => {
+    return this.discoveryService.init().then(() => {
+        return self.discoveryService.startingTheBusiness(self.pairingString);
+    }).then((response) => {
         if (response) {
             self.active = true;
             console.log(`RECEIVED A RESPONSE FOR ${self.discoveryService.messages.startingTheBusiness}: ${JSON.stringify(response)}`);

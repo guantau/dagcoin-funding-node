@@ -18,7 +18,17 @@ module.exports = function (properties, stateMachine, state) {
             'SELECT address FROM dagcoin_proofs WHERE address = ? AND device_address = ? AND proofed = ?',
             [properties.address, properties.deviceAddress, 1]
         ).then((rows) => {
-            return Promise.resolve(rows && rows.length === 1);
+            const proofInDb = rows && rows.length === 1;
+
+            if (!proofInDb) {
+                const proofManager = require('../../../proofManager').getInstance();
+
+                proofManager.askForProofs(properties.deviceAddress, [properties.address]).catch((e) => {
+                    require('dagcoin-core/exceptionManager').logError(e);
+                });
+            }
+
+            return Promise.resolve(proofInDb);
         });
     };
 

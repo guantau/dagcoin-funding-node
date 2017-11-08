@@ -8,6 +8,7 @@ function ProofManager() {
     this.db = require('byteballcore/db');
     this.hasher = require('byteballcore/object_hash');
     this.crypto = require('crypto');
+    this.deviceManager = require('dagcoin-core/deviceManager');
 
     this.active = false;
 }
@@ -258,6 +259,29 @@ ProofManager.prototype.proofAddressAndSaveToDB = function (proof, deviceAddress)
                 );
             });
         });
+    });
+};
+
+ProofManager.prototype.askForProofs = function (deviceAddress, addresses) {
+    if (!addresses || addresses.length === 0) {
+        console.log('ProofManager.askForProofs: CALLED WITH AN EMPTY LIST OF addresses. NOTHING TO BE DONE');
+        return Promise.resolve(null);
+    }
+
+    const self = this;
+
+    return self.deviceManager.sendRequestAndListen(deviceAddress, 'proofing', { addresses }).then((messageBody) => {
+        const proofs = messageBody.proofs;
+
+        console.log(`PROOFS: ${JSON.stringify(proofs)}`);
+
+        if (!proofs || proofs.length === 0) {
+            return Promise.reject(`NO PROOFS PROVIDED IN THE CLIENT RESPONSE FOR ${JSON.stringify(addresses)}`);
+        } else {
+            return Promise.resolve(proofs);
+        }
+    }).then((proofs) => {
+        return self.proofAddressBatch(proofs, properties.deviceAddress);
     });
 };
 

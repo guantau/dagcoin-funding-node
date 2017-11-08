@@ -262,13 +262,11 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
                 return Promise.resolve(definitionTemplateHash);
             });
         });
-    }).then((definitionTemplaceHash) => {
-        console.log(`SHARED ADDRESS: ${sharedAddress}`);
-
+    }).then((definitionTemplateHash) => {
         const response = {
             protocol: 'dagcoin',
             title: 'response.share-funded-address',
-            byteOrigin: definitionTemplaceHash, // TODO: this is not the right address. It might not be ready yet at this point
+            byteOrigin: definitionTemplateHash, // TODO: this is not the right address. It might not be ready yet at this point
             dagcoinDestination: self.dagcoinDestination
         };
 

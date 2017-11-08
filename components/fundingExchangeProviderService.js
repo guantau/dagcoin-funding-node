@@ -206,6 +206,8 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
         }).then((templateFoundInDb) => {
             if (templateFoundInDb) {
                 console.log(`AN ADDRESS SHARED WITH ${remoteDeviceAddress}:${remoteAddress} WAS FOUND IN THE DB (TEMPLATE): ${templateFoundInDb}`);
+                const device = require('byteballcore/device');
+                device.sendMessageToDevice(device_address, "create_new_shared_address", {address_definition_template: templateFoundInDb});
                 return Promise.resolve(this.objectHash.getChash160(templateFoundInDb));
             }
 

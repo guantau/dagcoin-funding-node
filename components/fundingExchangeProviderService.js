@@ -281,7 +281,7 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
                 JSON.stringify(response),
                 {
                     ifOk() {
-                        resolve(definitionTemplaceHash);
+                        resolve(definitionTemplateHash);
                     },
                     ifError(error) {
                         reject(error);
@@ -290,9 +290,9 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
             );
         });
     }).then(
-        (definitionTemplaceHash) => {
+        (definitionTemplateHash) => {
             this.shareFundedAddressPromise = null;
-            return Promise.resolve(definitionTemplaceHash);
+            return Promise.resolve(definitionTemplateHash);
         },
         (error) => {
             this.shareFundedAddressPromise = null;

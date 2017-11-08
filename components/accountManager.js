@@ -7,17 +7,11 @@ function AccountManager() {
     const self = this;
 
     self.conf = require('byteballcore/conf.js');
-    self.fs = require('fs');
     self.crypto = require('crypto');
-    self.desktopApp = require('byteballcore/desktop_app.js');
     self.device = require('byteballcore/device.js');
-    self.eventBus = require('byteballcore/event_bus');
-    self.util = require('util');
     self.network = require('byteballcore/network');
     self.consolidation = require('./consolidation');
     self.composer = require('byteballcore/composer.js');
-
-    self.applicationDataDirectory = this.desktopApp.getAppDataDir();
 
     const DatabaseManager = require('./databaseManager');
     self.dbManager = DatabaseManager.getInstance();

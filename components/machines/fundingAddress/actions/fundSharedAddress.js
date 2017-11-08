@@ -4,6 +4,7 @@ module.exports = function (properties, stateMachine, state) {
     const Action = require('dagcoin-fsm/action');
     const action = new Action(properties, stateMachine, state);
     const accountManager = require(`${__dirname}/../../../accountManager`).getInstance();
+    const conf = require('byteballcore/conf');
 
     if (!properties.sharedAddress) {
         throw Error(`NO sharedAddress IN Action setStatus. PROPERTIES: ${properties}`);
@@ -20,12 +21,12 @@ module.exports = function (properties, stateMachine, state) {
             },
             (error) => {
                 return new Promise((resolve) => {
-                    console.log(`COULD NOT SEND 5000 bytes TO ${properties.sharedAddress}: ${error}. RETRYING IN 5 MINUTES`);
+                    console.log(`COULD NOT SEND 5000 bytes TO ${properties.sharedAddress}: ${error}. RETRYING IN ${conf.MIN_RETRY_PAYMENT_DELAY} ms`);
                     setTimeout(() => {
                         action.repeatPayment().then(() => {
                             resolve();
                         })
-                    }, 60 * 1000);
+                    }, conf.MIN_RETRY_PAYMENT_DELAY);
                 });
             }
         );

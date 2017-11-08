@@ -17,13 +17,17 @@ KeyManager.prototype.read = function() {
 	const self = this;
 
 	return new Promise((resolve, reject) => {
-		self.fs.readFile(self.keyFileName, 'utf8', function(err, data){
-			if (err) {
-				reject(err);
-			} else {
-				resolve(data);
-			}
-		});
+        try {
+			self.fs.readFile(self.keyFileName, 'utf8', function(err, data){
+				if (err) {
+					reject(err);
+				} else {
+					resolve(data);
+				}
+			});
+        } catch (e) {
+            reject(new Error(`WHILE READING FROM FILE ${self.keyFileName}: ${e.message}`));
+        }
 	});
 };
 
@@ -31,14 +35,18 @@ KeyManager.prototype.write = function (keys) {
 	const self = this;
 
 	return new Promise((resolve, reject) => {
-		this.fs.writeFile(self.keyFileName, JSON.stringify(keys, null, '\t'), 'utf8', function(err) {
-			if (err) {
-				reject(`COULD NOT WRITE THE KEY FILE: ${err}`);
-			} else {
-				resolve(keys);
-			}
-		});
+		try {
+            self.fs.writeFile(self.keyFileName, JSON.stringify(keys, null, '\t'), 'utf8', function (err) {
+                if (err) {
+                    reject(`COULD NOT WRITE THE KEY FILE: ${err}`);
+                } else {
+                    resolve(keys);
+                }
+            });
+        } catch (e) {
+			reject(new Error(`WHILE WRITING ${JSON.stringify(keys, null, '\t')} TO FILE ${self.keyFileName}: ${e.message}`));
+		}
 	});
-}
+};
 
 module.exports = KeyManager;

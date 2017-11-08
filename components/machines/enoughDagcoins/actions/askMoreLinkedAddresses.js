@@ -3,7 +3,7 @@
 module.exports = function (properties, stateMachine, state) {
     const Action = require('dagcoin-fsm/action');
     const action = new Action(properties, stateMachine, state);
-    const dagcoinProtocolManager = require(`${__dirname}/../../../dagcoinProtocolManager`).getInstance();
+    const deviceManager = require('dagcoin-core/deviceManager').getInstance();
     const proofManager = require(`${__dirname}/../../../proofManager`).getInstance();
 
     if (!properties.deviceAddress) {
@@ -11,7 +11,7 @@ module.exports = function (properties, stateMachine, state) {
     }
 
     action.execute = function () {
-        dagcoinProtocolManager.sendRequestAndListen(properties.deviceAddress, 'have-dagcoins', {}).then((messageBody) => {
+        deviceManager.sendRequestAndListen(properties.deviceAddress, 'have-dagcoins', {}).then((messageBody) => {
             const proofs = messageBody.proofs;
 
             if (!proofs || proofs.length === 0) {

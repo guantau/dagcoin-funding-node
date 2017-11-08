@@ -3,7 +3,7 @@
 function FundingExchangeProvider(pairingString, xPrivKey) {
     this.conf = require('byteballcore/conf.js');
     this.eventBus = require('byteballcore/event_bus');
-    this.db = require('byteballcore/db');
+    this.dbManager = require('dagcoin-core/databaseManager').getInstance();
     this.timedPromises = require('./promiseManager');
 
     this.exchangeFee = this.conf.exchangeFee;
@@ -20,7 +20,7 @@ function FundingExchangeProvider(pairingString, xPrivKey) {
 
     this.proofManager = require('./proofManager').getInstance();
 
-    this.dagcoinProtocolManager = require('./dagcoinProtocolManager').getInstance();
+    this.deviceManager = require('dagcoin-core/deviceManager').getInstance();
 
     console.log(`pairingString: ${this.pairingString}`);
     console.log(`xPrivKey: ${this.xPrivKey}`);
@@ -43,7 +43,9 @@ FundingExchangeProvider.prototype.activate = function () {
 
     console.log('GOING TO START THE BUSINESS');
 
-    return this.discoveryService.startingTheBusiness(this.pairingString).then((response) => {
+    return this.discoveryService.init().then(() => {
+        return self.discoveryService.startingTheBusiness(self.pairingString);
+    }).then((response) => {
         if (response) {
             self.active = true;
             console.log(`RECEIVED A RESPONSE FOR ${self.discoveryService.messages.startingTheBusiness}: ${JSON.stringify(response)}`);
@@ -55,7 +57,7 @@ FundingExchangeProvider.prototype.activate = function () {
         }
     }).then(() => {
         console.log("ADDING REACTION TO dagcoin.request.share-funded-address");
-        self.eventBus.on('dagcoin.request.share-funded-address', (message, deviceAddress) => {
+        self.eventBus.on('dagcoin.request.share-funded-address', (deviceAddress, message) => {
             console.log(`REQUEST TO SHARE AN ADDRESS FROM ${deviceAddress}: ${JSON.stringify(message)}`);
             self.shareFundedAddress(deviceAddress, message).then(
                 (sharedAddress) => {
@@ -124,18 +126,17 @@ FundingExchangeProvider.prototype.initDagcoinDestination = function () {
         return Promise.resolve(self.dagcoinDestination);
     }
 
-    return new Promise((resolve, reject) => {
-        self.db.query("SELECT wallet FROM wallets", function (rows) {
-            if (rows.length === 0) {
-                reject('NO WALLETS FOUND');
-            } else if (rows.length > 1) {
-                reject(`MORE THAN 1 WALLET FOUND: ${rows.length} ARE CURRENTLY IN THE DATABASE`);
-            } else {
-                console.log('WALLET FOUND');
-                resolve(rows[0].wallet);
-            }
-        });
-    }).then((walletId) => {
+    return self.dbManager.query("SELECT wallet FROM wallets").then((rows) => {
+        if (rows.length === 0) {
+            return Promise.reject('NO WALLETS FOUND');
+        } else if (rows.length > 1) {
+            return Promise.reject(`MORE THAN 1 WALLET FOUND: ${rows.length} ARE CURRENTLY IN THE DATABASE`);
+        }
+
+        console.log('WALLET FOUND');
+
+        const walletId = rows[0].wallet;
+
         return new Promise((resolve, reject) => {
             self.walletDefinedByKeys.readAddresses(walletId, {}, (rows) => {
                 if (!rows || rows.length === 0) {
@@ -191,20 +192,15 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
         }
 
         return promise.then(() => {
-            return new Promise((resolve) => {
-                // CHECK IF THE SHARED ADDRESS FOR THE REQUESTOR ALREADY EXISTS
-                self.db.query(
-                    'SELECT shared_address FROM shared_address_signing_paths WHERE \
-                    address = ? AND device_address = ?',
-                    [remoteAddress, remoteDeviceAddress],
-                    (rows) => {
-                        if (rows && rows.length > 0) {
-                            resolve(rows[0].sharedAddress);
-                        } else {
-                            resolve(null);
-                        }
-                    }
-                );
+            return self.dbManager.query(
+                'SELECT shared_address FROM shared_address_signing_paths WHERE address = ? AND device_address = ?',
+                [remoteAddress, remoteDeviceAddress]
+            ).then((rows) => {
+                if (rows && rows.length > 0) {
+                    return Promise.resolve(rows[0].sharedAddress);
+                } else {
+                    return Promise.resolve(null);
+                }
             });
         }).then((sharedAddressFoundInDb) => {
             if (sharedAddressFoundInDb) {
@@ -230,44 +226,36 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
             `);
 
             const definitionTemplateHash = this.objectHash.getChash160(addressDefinitionTemplate);
-
+            console.log(`ADDRESS DEFINITION TEMPLATE: ${JSON.stringify(addressDefinitionTemplate)}`);
             // CHECK IN THE PENDING TABLES
 
-            return new Promise(function (resolve, reject) {
-                console.log(`ADDRESS DEFINITION TEMPLATE: ${JSON.stringify(addressDefinitionTemplate)}`);
+            return self.dbManager.query(
+                'SELECT definition_template_chash, creation_date FROM pending_shared_addresses WHERE definition_template_chash = ?',
+                [definitionTemplateHash]
+            ).then((rows) => {
+                console.log(`FOUND ${rows ? rows.length : 0} WITH definition_template_chash ${definitionTemplateHash}`);
 
-                self.db.query(
-                    'SELECT definition_template_chash, creation_date FROM pending_shared_addresses WHERE definition_template_chash = ?',
-                    [definitionTemplateHash],
-                    function (rows) {
-                        console.log(`FOUND ${rows.length} WITH definition_template_chash ${definitionTemplateHash}`);
-                        if (rows.length > 0) {
-                            const existingTmp = rows[0];
+                if (rows == null || rows.length == 0) {
+                    return Promise.resolve();
+                }
 
-                            if (new Date(existingTmp.creation_date).getTime() > new Date().getTime() - 1000 * 60 * 10) {
-                                // WAITING 5 MINUTES FOR THE PROPOSAL TO BE ACCEPTED
-                                reject("ALREADY ON PROCESSING");
-                            } else {
-                                // CLEANING UP THE PENDING TABLES: THE PROPOSAL WENT LOST OR WAS NOT ACCEPTED
-                                self.db.query(
-                                    'DELETE FROM pending_shared_address_signing_paths WHERE definition_template_chash = ?',
-                                    [definitionTemplateHash],
-                                    () => {
-                                        self.db.query(
-                                            'DELETE FROM pending_shared_addresses WHERE definition_template_chash = ?',
-                                            [definitionTemplateHash],
-                                            () => {
-                                                resolve();
-                                            }
-                                        );
-                                    }
-                                );
-                            }
-                        } else {
-                            resolve();
-                        }
-                    }
-                );
+                const existingTmp = rows[0];
+
+                if (new Date(existingTmp.creation_date).getTime() > new Date().getTime() - 1000 * 60 * 10) {
+                    // WAITING 5 MINUTES FOR THE PROPOSAL TO BE ACCEPTED
+                    return Promise.reject("ALREADY ON PROCESSING");
+                }
+
+                // CLEANING UP THE PENDING TABLES: THE PROPOSAL WENT LOST OR WAS NOT ACCEPTED
+                return self.dbManager.query(
+                    'DELETE FROM pending_shared_address_signing_paths WHERE definition_template_chash = ?',
+                    [definitionTemplateHash]
+                ).then(() => {
+                    return self.dbManager.query(
+                        'DELETE FROM pending_shared_addresses WHERE definition_template_chash = ?',
+                        [definitionTemplateHash]
+                    );
+                });
             }).then(() => {
                 self.walletDefinedByAddress.createNewSharedAddressByTemplate(addressDefinitionTemplate, myAddress, {"r": myDeviceAddress});
                 return Promise.resolve(definitionTemplateHash);
@@ -323,10 +311,6 @@ FundingExchangeProvider.prototype.initComponents = function () {
 
     if (!this.device) {
         this.device = require('byteballcore/device.js');
-    }
-
-    if (!this.db) {
-        this.db = require('byteballcore/db');
     }
 
     if (!this.objectHash) {
@@ -516,6 +500,8 @@ FundingExchangeProvider.prototype.handleSharedPaymentRequest = function () {
                         }
 
                         unlock();
+
+                        self.followFundingAddresses(authors);
                         /* return self.proofAuthors(from_address, authors).then(
                             (proofingResult) => {
                                 approve = proofingResult;
@@ -542,6 +528,25 @@ FundingExchangeProvider.prototype.handleSharedPaymentRequest = function () {
             });
         });
     });
+};
+
+FundingExchangeProvider.prototype.followFundingAddresses = function(authors) {
+    const self = this;
+
+    for (let i = 0; i < authors.length; i++) {
+        console.log(`IS ${authors[i].address} A SHARED ADDRESS?`);
+        self.dbManager.query(
+            'SELECT shared_address, master_address, master_device_address, definition_type, ' +
+            'status, created, last_status_change, previous_status FROM dagcoin_funding_addresses WHERE shared_address = ?',
+            [authors[i].address]
+        ).then((rows) => {
+            if (rows && rows.length == 1) {
+                const sharedAddress = rows[0].shared_address;
+                console.log(`FOLLOWING ADDRESS ${sharedAddress} UPON PAYMENT`)
+                self.eventBus.emit('internal.dagcoin.addresses-to-follow', [rows[0]]);
+            }
+        });
+    }
 };
 
 FundingExchangeProvider.prototype.proofAuthors = function(fromAddress, authors) {
@@ -576,7 +581,7 @@ FundingExchangeProvider.prototype.proofAuthors = function(fromAddress, authors) 
             addresses: addressesNeedingProofs
         };
 
-        return self.dagcoinProtocolManager.sendRequestAndListen(fromAddress, 'proofing', request).then((messageBody) => {
+        return self.deviceManager.sendRequestAndListen(fromAddress, 'proofing', request).then((messageBody) => {
             const proofs = messageBody.proofs;
 
             console.log(`PROOFS: ${JSON.stringify(proofs)}`);

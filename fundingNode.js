@@ -5,10 +5,10 @@ const conf = require('byteballcore/conf.js');
 const eventBus = require('byteballcore/event_bus.js');
 eventBus.setMaxListeners(120);
 
-const accountManager = require('./components/accountManager').getInstance();
+const accountManager = require('dagcoin-core/accountManager').getInstance();
 const dbManager = require('./components/databaseManager').getInstance();
 const proofManager = require('./components/proofManager').getInstance();
-const dagcoinProtocolManager = require('./components/dagcoinProtocolManager').getInstance();
+const deviceManager = require('dagcoin-core/deviceManager').getInstance();
 
 let fundingExchangeProvider = null;
 const followedAddress = {};
@@ -77,26 +77,8 @@ function setupChatEventHandlers() {
     });
 
     // One device can send such message to check whether another device can exchange messages
-    eventBus.on('dagcoin.is-connected', (message, fromAddress) => {
+    eventBus.on('dagcoin.is-connected', (fromAddress) => {
         console.log('DAGCOIN CONNECTION REQUEST');
-
-        const reply = {
-            protocol: 'dagcoin',
-            title: 'connected'
-        };
-
-        const device = require('byteballcore/device.js');
-
-        const DiscoveryService = require('./components/discoveryService');
-        const discoveryService = new DiscoveryService();
-
-        discoveryService.getCorrespondent(fromAddress).then((correspondent) => {
-            if (correspondent != null) {
-                device.sendMessageToDevice(fromAddress, 'text', JSON.stringify(reply));
-            } else {
-                console.log(`CORRESPONDENT OF ${fromAddress} NOT FOUND`);
-            }
-        });
 
         // IF THE CONNECTED DEVICE HAS A FUNDING ADDRESS, LET'S LOAD IT
         dbManager.query(
@@ -145,7 +127,7 @@ function setupChatEventHandlers() {
         });
     });
 
-    eventBus.on('dagcoin.request.link-address', (message, fromAddress) => {
+    eventBus.on('dagcoin.request.link-address', (fromAddress, message) => {
         console.log(`DAGCOIN link-address REQUEST: ${JSON.stringify(message)} FROM ${fromAddress}`);
 
         message.messageBody.device_address = fromAddress;
@@ -153,7 +135,7 @@ function setupChatEventHandlers() {
         proofManager.proofAddressAndSaveToDB(message.messageBody, fromAddress);
     });
 
-    eventBus.on('dagcoin.request.load-address', (message, fromAddress) => {
+    eventBus.on('dagcoin.request.load-address', (fromAddress, message) => {
         console.log(`DAGCOIN load-address REQUEST: ${JSON.stringify(message)} FROM ${fromAddress}`);
 
         dbManager.query(
@@ -175,7 +157,7 @@ function setupChatEventHandlers() {
 
                     const sharedAddress = rows[0].shared_address;
 
-                    return dagcoinProtocolManager.sendRequestAndListen(fromAddress, 'have-dagcoins', {}).then(
+                    return deviceManager.sendRequestAndListen(fromAddress, 'have-dagcoins', {}).then(
                         (messageBody) => {
                             const proofs = messageBody.proofs;
 
@@ -235,28 +217,6 @@ function setupChatEventHandlers() {
         }).catch((error) => {
             console.log(`COULD NOT LOAD THE FUNDING ADDRESS OF ${fromAddress} FOR ${JSON.stringify(message)}: ${error}`);
         });
-    });
-
-    eventBus.on('text', function (fromAddress, text) {
-        console.log(`TEXT MESSAGE FROM ${fromAddress}: ${text}`);
-
-        let message = null;
-
-        try {
-            message = JSON.parse(text);
-        } catch (err) {
-            console.log(`NEW MESSAGE FROM ${fromAddress}: ${text} NOT A JSON MESSAGE: ${err}`);
-        }
-
-        if (message !== null) {
-            if (message.protocol === 'dagcoin') {
-                console.log(`DAGCOIN MESSAGE RECEIVED FROM ${fromAddress}`);
-                eventBus.emit(`dagcoin.${message.title}`, message, fromAddress);
-                return Promise.resolve(true);
-            }
-
-            console.log(`JSON MESSAGE RECEIVED FROM ${fromAddress} WITH UNEXPECTED PROTOCOL: ${message.protocol}`);
-        }
     });
 }
 

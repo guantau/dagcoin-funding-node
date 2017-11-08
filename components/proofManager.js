@@ -281,7 +281,7 @@ ProofManager.prototype.askForProofs = function (deviceAddress, addresses) {
             return Promise.resolve(proofs);
         }
     }).then((proofs) => {
-        return self.proofAddressBatch(proofs, properties.deviceAddress);
+        return self.proofAddressBatch(proofs, deviceAddress);
     });
 };
 

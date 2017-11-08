@@ -193,19 +193,20 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
 
         return promise.then(() => {
             return self.dbManager.query(
-                'SELECT shared_address FROM shared_address_signing_paths WHERE address = ? AND device_address = ?',
+                'SELECT sa.definition FROM shared_address_signing_paths sasp, shared_address sa WHERE sasp.address = ? ' +
+                'AND sasp.device_address = ? AND sasp.shared_address = sa.shared_address',
                 [remoteAddress, remoteDeviceAddress]
             ).then((rows) => {
                 if (rows && rows.length > 0) {
-                    return Promise.resolve(rows[0].shared_address);
+                    return Promise.resolve(rows[0].definition);
                 } else {
                     return Promise.resolve(null);
                 }
             });
-        }).then((sharedAddressFoundInDb) => {
-            if (sharedAddressFoundInDb) {
-                console.log(`AN ADDRESS SHARED WITH ${remoteDeviceAddress}:${remoteAddress} WAS FOUND IN THE DB: ${sharedAddressFoundInDb}`);
-                return Promise.resolve(sharedAddressFoundInDb);
+        }).then((templateFoundInDb) => {
+            if (templateFoundInDb) {
+                console.log(`AN ADDRESS SHARED WITH ${remoteDeviceAddress}:${remoteAddress} WAS FOUND IN THE DB (TEMPLATE): ${templateFoundInDb}`);
+                return Promise.resolve(this.objectHash.getChash160(templateFoundInDb));
             }
 
             console.log(`MY ADDRESS: ${myAddress}`);

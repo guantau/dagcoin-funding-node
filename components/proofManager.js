@@ -8,7 +8,7 @@ function ProofManager() {
     this.db = require('byteballcore/db');
     this.hasher = require('byteballcore/object_hash');
     this.crypto = require('crypto');
-    this.deviceManager = require('dagcoin-core/deviceManager');
+    this.deviceManager = require('dagcoin-core/deviceManager').getInstance();
 
     this.active = false;
 }

@@ -204,15 +204,6 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
                 }
             });
         }).then((templateFoundInDb) => {
-            if (templateFoundInDb) {
-                console.log(`AN ADDRESS SHARED WITH ${remoteDeviceAddress}:${remoteAddress} WAS FOUND IN THE DB (TEMPLATE): ${templateFoundInDb}`);
-                const device = require('byteballcore/device');
-                device.sendMessageToDevice(remoteDeviceAddress, "create_new_shared_address", {address_definition_template: JSON.parse(templateFoundInDb)});
-                return Promise.resolve(this.objectHash.getChash160(templateFoundInDb));
-            }
-
-            console.log(`MY ADDRESS: ${myAddress}`);
-
             const addressDefinitionTemplate = JSON.parse(`
                 [
                     "or",
@@ -227,6 +218,15 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
                     ]
                 ]
             `);
+
+            if (templateFoundInDb) {
+                console.log(`AN ADDRESS SHARED WITH ${remoteDeviceAddress}:${remoteAddress} WAS FOUND IN THE DB (TEMPLATE): ${templateFoundInDb}`);
+                const device = require('byteballcore/device');
+                device.sendMessageToDevice(remoteDeviceAddress, "create_new_shared_address", {address_definition_template: addressDefinitionTemplate});
+                return Promise.resolve(this.objectHash.getChash160(templateFoundInDb));
+            }
+
+            console.log(`MY ADDRESS: ${myAddress}`);
 
             const definitionTemplateHash = this.objectHash.getChash160(addressDefinitionTemplate);
             console.log(`ADDRESS DEFINITION TEMPLATE: ${JSON.stringify(addressDefinitionTemplate)}`);

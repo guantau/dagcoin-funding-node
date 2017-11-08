@@ -193,7 +193,7 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
 
         return promise.then(() => {
             return self.dbManager.query(
-                'SELECT sa.definition FROM shared_address_signing_paths sasp, shared_address sa WHERE sasp.address = ? ' +
+                'SELECT sa.definition FROM shared_address_signing_paths sasp, shared_addresses sa WHERE sasp.address = ? ' +
                 'AND sasp.device_address = ? AND sasp.shared_address = sa.shared_address',
                 [remoteAddress, remoteDeviceAddress]
             ).then((rows) => {

@@ -193,17 +193,69 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
 
         return promise.then(() => {
             return self.dbManager.query(
-                'SELECT sa.definition FROM shared_address_signing_paths sasp, shared_addresses sa WHERE sasp.address = ? ' +
+                'SELECT sa.shared_address, sa.definition FROM shared_address_signing_paths sasp, shared_addresses sa WHERE sasp.address = ? ' +
                 'AND sasp.device_address = ? AND sasp.shared_address = sa.shared_address',
                 [remoteAddress, remoteDeviceAddress]
             ).then((rows) => {
                 if (rows && rows.length > 0) {
-                    return Promise.resolve(rows[0].definition);
+                    return Promise.resolve(rows[0]);
                 } else {
                     return Promise.resolve(null);
                 }
             });
         }).then((templateFoundInDb) => {
+            if (templateFoundInDb != null) {
+                /*
+                 * It means that the shared address for this customer already exists but most likely the customer has lost
+                 * track of it. The funding node in this case just send a message (new_shared_address) that
+                 */
+                const definition = templateFoundInDb.definition;
+                const sharedAddress = templateFoundInDb.shared_address;
+
+                console.log(`AN ADDRESS SHARED WITH ${remoteDeviceAddress}:${remoteAddress} WAS FOUND IN THE DB (TEMPLATE): ${definition}`);
+                const device = require('byteballcore/device');
+                return self.dbManager.query(
+                    'SELECT signing_path, member_signing_path, address, device_address ' +
+                    'FROM shared_address_signing_paths WHERE shared_address = ?',
+                    [sharedAddress]
+                ).then((rows) => {
+                    const signers = {};
+
+                    if (rows && rows.length > 0) {
+                        for (let i = 0; i < rows.length; i += 1) {
+                            const row = rows[i];
+
+                            signers[row.signing_path] = {
+                                device_address: row.device_address,
+                                address: row.address,
+                                member_signing_path: row.member_signing_path
+                            }
+                        }
+                    }
+
+                    device.sendMessageToDevice(
+                        remoteDeviceAddress,
+                        "new_shared_address",
+                        {
+                            address: sharedAddress,
+                            definition: JSON.parse(definition),
+                            signers,
+                            forwarded: false
+                        },
+                        {
+                            ifOk() {
+                                console.log(`REBUILD SHARED ADDRESS new_shared_address SENT TO ${remoteDeviceAddress}`);
+                            },
+                            ifError(error) {
+                                console.log(`ERROR SENDING REBUILD SHARED ADDRESS new_shared_address SENT TO ${remoteDeviceAddress}: ${error}`);
+                            }
+                        }
+                    );
+
+                    return Promise.resolve(self.objectHash.getChash160(definition));
+                });
+            }
+
             const addressDefinitionTemplate = JSON.parse(`
                 [
                     "or",
@@ -218,13 +270,6 @@ FundingExchangeProvider.prototype.shareFundedAddress = function (remoteDeviceAdd
                     ]
                 ]
             `);
-
-            if (templateFoundInDb) {
-                console.log(`AN ADDRESS SHARED WITH ${remoteDeviceAddress}:${remoteAddress} WAS FOUND IN THE DB (TEMPLATE): ${templateFoundInDb}`);
-                const device = require('byteballcore/device');
-                device.sendMessageToDevice(remoteDeviceAddress, "create_new_shared_address", {address_definition_template: addressDefinitionTemplate});
-                return Promise.resolve(this.objectHash.getChash160(templateFoundInDb));
-            }
 
             console.log(`MY ADDRESS: ${myAddress}`);
 

@@ -268,6 +268,11 @@ dbManager.checkOrUpdateDatabase().then(() => {
     );
 });
 
+process.on('unhandledRejection', function (reason, p) {
+    //I just caught an unhandled promise rejection, since we already have fallback handler for unhandled errors (see below), let throw and let him handle that
+    throw reason;
+});
+
 process.on('uncaughtException', function(err) {
     console.log('Caught uncaughtException');
     require('dagcoin-core/exceptionManager').logError(err);

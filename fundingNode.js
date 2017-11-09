@@ -267,3 +267,13 @@ dbManager.checkOrUpdateDatabase().then(() => {
         }
     );
 });
+
+process.on('uncaughtException', function(err) {
+    console.log('Caught uncaughtException');
+    require('dagcoin-core/exceptionManager').logError(err);
+});
+
+process.on('ERROR', function(err) {
+    console.log('Caught ERROR');
+    require('dagcoin-core/exceptionManager').logError(err);
+});

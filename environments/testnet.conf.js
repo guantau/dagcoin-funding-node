@@ -13,7 +13,7 @@ exports.sentryUrl = 'https://7169094cd11e474682fef59e8c840d67:674071c825054e1095
 
 exports.deviceName = 'Testnet-Funding-Node';
 exports.hub = 'byteball.org/bb-test';
-//exports.hub = 'testnetexplorer.dagcoin.org/wss/';
+exports.hub = 'testnetexplorer.dagcoin.org/wss/';
 exports.permanent_pairing_secret = '1G5kGcBcsfkH';
 exports.control_addresses = ['DEVICE ALLOWED TO CHAT'];
 exports.payout_address = 'WHERE THE MONEY CAN BE SENT TO';

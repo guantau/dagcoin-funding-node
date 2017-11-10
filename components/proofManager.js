@@ -8,7 +8,7 @@ function ProofManager() {
     this.db = require('byteballcore/db');
     this.hasher = require('byteballcore/object_hash');
     this.crypto = require('crypto');
-    this.deviceManager = require('dagcoin-core/deviceManager');
+    this.deviceManager = require('dagcoin-core/deviceManager').getInstance();
 
     this.active = false;
 }
@@ -281,7 +281,7 @@ ProofManager.prototype.askForProofs = function (deviceAddress, addresses) {
             return Promise.resolve(proofs);
         }
     }).then((proofs) => {
-        return self.proofAddressBatch(proofs, properties.deviceAddress);
+        return self.proofAddressBatch(proofs, deviceAddress);
     });
 };
 

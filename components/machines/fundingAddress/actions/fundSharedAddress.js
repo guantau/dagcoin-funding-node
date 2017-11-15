@@ -33,10 +33,9 @@ module.exports = function (properties, stateMachine, state) {
     };
 
     action.sendPayment = function () {
-        /*return accountManager.readAccount().then(() => {
+        return accountManager.readAccount().then(() => {
             return accountManager.sendPayment(properties.sharedAddress, 5000);
-        });*/
-        return accountManager.sendPayment(properties.sharedAddress, 5000);
+        });
     };
 
     return action;

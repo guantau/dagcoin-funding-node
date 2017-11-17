@@ -2,7 +2,7 @@
   "name": "dagcoin-funding-node",
   "description": "Dagcoin Funding Node",
   "author": "Dagcoin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "start.js",
   "keywords": [
     "wallet",
@@ -32,7 +32,7 @@
     "json-rpc2": "^1.0.2",
     "db-migrate": "^0.10.0-beta.24",
     "db-migrate-sqlite3": "^0.2.1",
-    "dagcoin-core": "^0.1.12",
+    "dagcoin-core": "^0.4.0",
     "dagcoin-fsm": "^0.0.2",
     "raven": "^2.2.1"
   }

@@ -3,8 +3,7 @@
 module.exports = function (properties, stateMachine, state) {
     const Action = require('dagcoin-fsm/action');
     const action = new Action(properties, stateMachine, state);
-    const DatabaseManager = require(`${__dirname}/../../../databaseManager`);
-    const dbManager = DatabaseManager.getInstance();
+    const dbManager = require(`dagcoin-core/databaseManager`).getInstance();
 
     if (!properties.sharedAddress) {
         throw Error(`NO sharedAddress IN Action setStatus. PROPERTIES: ${properties}`);

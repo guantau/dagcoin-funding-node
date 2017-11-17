@@ -42,7 +42,7 @@ exports.up = function(db) {
               sasp.address,
               sasp.device_address,
               (sa.definition LIKE '%or%') + 1 as definition_type,
-              'LEGACY' as status,
+              'NEW' as status,
               CURRENT_TIMESTAMP as created
             FROM
               shared_addresses sa,

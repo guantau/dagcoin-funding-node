@@ -6,9 +6,11 @@ const eventBus = require('byteballcore/event_bus.js');
 eventBus.setMaxListeners(120);
 
 const accountManager = require('dagcoin-core/accountManager').getInstance();
-const dbManager = require('./components/databaseManager').getInstance();
+const dbManager = require('dagcoin-core/databaseManager').getInstance();
 const proofManager = require('./components/proofManager').getInstance();
 const deviceManager = require('dagcoin-core/deviceManager').getInstance();
+const osManager = require('dagcoin-core/operatingSystemManager').getInstance();
+const exceptionManager = require('dagcoin-core/exceptionManager');
 
 let fundingExchangeProvider = null;
 const followedAddress = {};
@@ -221,64 +223,55 @@ function setupChatEventHandlers() {
 }
 
 dbManager.checkOrUpdateDatabase().then(() => {
-    accountManager.readAccount().then(
-        () => {
-            try {
-                setupChatEventHandlers();
+    accountManager.readAccount().then(() => {
+        try {
+            setupChatEventHandlers();
 
-                console.log('WHAT');
+            const FundingExchangeProvider = require('./components/fundingExchangeProviderService');
+            console.log('HANDLERS ARE UP');
+            fundingExchangeProvider = new FundingExchangeProvider(accountManager.getPairingCode(), accountManager.getPrivateKey());
+            fundingExchangeProvider
+                .activate()
+                .then(() => {
+                    console.log('COMPLETED ACTIVATION ... UPDATING SETTINGS');
+                    return fundingExchangeProvider.updateSettings()
+                }).catch(err => {
+                console.log(err);
+            });
 
-                const FundingExchangeProvider = require('./components/fundingExchangeProviderService');
-                console.log('HANDLERS ARE UP');
-                fundingExchangeProvider = new FundingExchangeProvider(accountManager.getPairingCode(), accountManager.getPrivateKey());
-                fundingExchangeProvider
-                    .activate()
-                    .then(() => {
-                        console.log('COMPLETED ACTIVATION ... UPDATING SETTINGS');
-                        return fundingExchangeProvider.updateSettings()
-                    }).catch(err => {
-                    console.log(err);
-                });
+            fundingExchangeProvider.handleSharedPaymentRequest();
 
-                fundingExchangeProvider.handleSharedPaymentRequest();
+            setInterval(() => {
+                console.log('STATUSES');
+                console.log('--------------------');
+                for (let address in followedAddress) {
+                    console.log(`${address} : ${followedAddress[address].getCurrentState().getName()}`)
+                }
+                console.log('--------------------');
+            }, 60 * 1000);
 
-                setInterval(() => {
-                    console.log('STATUSES');
-                    console.log('--------------------');
-                    for (let address in followedAddress) {
-                        console.log(`${address} : ${followedAddress[address].getCurrentState().getName()}`)
-                    }
-                    console.log('--------------------');
-                }, 60 * 1000);
-
-                // SETTING UP THE LOOPS
-                require('./components/routines/evaluateProofs').start(5 * 1000, 60 * 1000);
-                require('./components/routines/transferSharedAddressesToFundingTable').start(10 * 1000, 60 * 1000);
-            } catch (e) {
-                console.error(e, e.stack);
-                Raven.captureException(e);
-                process.exit();
-            }
-        },
-        (err) => {
-            console.log(`COULD NOT START: ${err}`);
-            Raven.captureException(err);
-            process.exit();
+            // SETTING UP THE LOOPS
+            require('./components/routines/evaluateProofs').start(5 * 1000, 60 * 1000);
+            require('./components/routines/transferSharedAddressesToFundingTable').start(10 * 1000, 60 * 1000);
+        } catch (e) {
+            return Promise.reject(e);
         }
-    );
+    });
+}).catch((err) => {
+    exceptionManager.logError(err);
+    Raven.captureException(err);
+    osManager.shutDown();
 });
 
 process.on('unhandledRejection', function (reason, p) {
     //I just caught an unhandled promise rejection, since we already have fallback handler for unhandled errors (see below), let throw and let him handle that
+    console.log('Caught unhandledRejection');
     throw reason;
 });
 
 process.on('uncaughtException', function(err) {
     console.log('Caught uncaughtException');
-    require('dagcoin-core/exceptionManager').logError(err);
-});
-
-process.on('ERROR', function(err) {
-    console.log('Caught ERROR');
-    require('dagcoin-core/exceptionManager').logError(err);
+    exceptionManager.logError(err);
+    Raven.captureException(err);
+    osManager.shutDown();
 });

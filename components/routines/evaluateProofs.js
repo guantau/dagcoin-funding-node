@@ -1,8 +1,7 @@
 /*jslint node: true */
 "use strict";
 
-const DatabaseManager = require('../databaseManager');
-const dbManager = DatabaseManager.getInstance();
+const dbManager = require('dagcoin-core/databaseManager').getInstance();
 const promiseManager = require('../promiseManager');
 const proofManager = require('../proofManager').getInstance();
 

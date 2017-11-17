@@ -1,7 +1,7 @@
 /*jslint node: true */
 "use strict";
 
-const dbManager = require('../databaseManager').getInstance();
+const dbManager = require('dagcoin-core/databaseManager').getInstance();
 const promiseManager = require('../promiseManager');
 const eventBus = require('byteballcore/event_bus');
 

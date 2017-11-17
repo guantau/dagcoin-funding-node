@@ -3,7 +3,7 @@
 module.exports = function (properties, stateMachine, state) {
     const Action = require('dagcoin-fsm/action');
     const action = new Action(properties, stateMachine, state);
-    const accountManager = require(`${__dirname}/../../../accountManager`).getInstance();
+    const accountManager = require(`dagcoin-core/accountManager`).getInstance();
     const conf = require('byteballcore/conf');
 
     if (!properties.sharedAddress) {
@@ -33,9 +33,7 @@ module.exports = function (properties, stateMachine, state) {
     };
 
     action.sendPayment = function () {
-        return accountManager.readAccount().then(() => {
-            return accountManager.sendPayment(properties.sharedAddress, 5000);
-        });
+        return accountManager.sendPayment(properties.sharedAddress, 5000);
     };
 
     return action;

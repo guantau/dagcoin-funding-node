@@ -22,6 +22,7 @@ module.exports = function (properties, stateMachine, state) {
                 return Promise.resolve();
             },
             (error) => {
+                require('dagcoin-core/exceptionManager').logError(error);
                 return new Promise((resolve) => {
                     console.log(`COULD NOT SEND 5000 bytes TO ${properties.sharedAddress}: ${error}. RETRYING IN ${conf.MIN_RETRY_PAYMENT_DELAY} ms`);
                     setTimeout(() => {

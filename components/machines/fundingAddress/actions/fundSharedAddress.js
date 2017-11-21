@@ -5,8 +5,8 @@ module.exports = function (properties, stateMachine, state) {
     const action = new Action(properties, stateMachine, state);
     const accountManager = require(`dagcoin-core/accountManager`).getInstance();
     const conf = require('byteballcore/conf');
-    const WalletManager = require('./walletManager');
-    self.walletManager = new WalletManager();
+    const WalletManager = require('dagcoin-core/walletManager');
+    const walletManager = new WalletManager();
 
     if (!properties.sharedAddress) {
         throw Error(`NO sharedAddress IN Action setStatus. PROPERTIES: ${properties}`);
@@ -35,8 +35,7 @@ module.exports = function (properties, stateMachine, state) {
     };
 
     action.sendPayment = function () {
-        return accountManager.readAccount()
-        .then(() => accountManager.sendPayment(properties.sharedAddress, 5000))
+        return accountManager.sendPayment(properties.sharedAddress, conf.BYTE_THRESHOLD_FOR_WARNING)
         .then(() => walletManager.readSingleAddress())
         .then((masterAddress) => accountManager.checkBytesForAddress(masterAddress))
         .then((bytesOnMasterAddress) => {

@@ -41,6 +41,8 @@ exports.totalBytes =  100000;
 exports.bytesPerAddress = 10000;
 exports.maxEndUserCapacity = 10;
 
+exports.BYTE_THRESHOLD_FOR_WARNING = 10000000;
+
 exports.passPhrase = '123';
 exports.dagcoinAsset = 'j5brqzPhQ0H2VNYi3i59PmlV15p54yAiSzacrQ2KqQQ=';
 
@@ -50,5 +52,7 @@ exports.MIN_PAYMENT_DELAY = 5 * 1000;
 exports.MIN_RETRY_PAYMENT_DELAY = 60 * 1000; // How many millis before retrying a failed payment
 exports.MIN_STABLE_BYTES_ON_MAIN_BEFORE_FUNDING = 2000;
 exports.MAIN_ADDRESS_FUNDS_INSPECTION_PERIOD = 10 * 1000;
+
+exports.DATABASE_MIGRATION_TOOL = "db-migrate"; // CAN BE native-queries OR db-migrate
 
 console.log('finished headless conf');

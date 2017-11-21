@@ -4,12 +4,10 @@ let instance = null;
 
 // My module
 function DagcoinDbManager() {
-    this.dbManager = require('./databaseManager').getInstance();
+    this.dbManager = require('dagcoin-core/databaseManager').getInstance();
     this.conf = require('byteballcore/conf');
     this.timedPromises = require('./promiseManager');
-
-    const FileSystemManager = require('./fileSystemManager');
-    this.fileSystemManager = new FileSystemManager();
+    this.fileSystemManager = require('dagcoin-core/fileSystemManager').getInstance();
 }
 
 DagcoinDbManager.prototype.query = function (query, parameters) {

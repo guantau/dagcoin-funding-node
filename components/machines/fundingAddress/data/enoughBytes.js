@@ -3,8 +3,7 @@
 module.exports = function (properties, stateMachine, state) {
     const DataFetcher = require('dagcoin-fsm/dataFetcher');
     const fetcher = new DataFetcher(properties, stateMachine, state);
-    const DatabaseManager = require(`${__dirname}/../../../databaseManager`);
-    const dbManager = DatabaseManager.getInstance();
+    const dbManager = require(`dagcoin-core/databaseManager`).getInstance();
 
     if (!properties.sharedAddress) {
         throw Error(`NO sharedAddress IN DataFetcher proofInDb. PROPERTIES: ${properties}`);

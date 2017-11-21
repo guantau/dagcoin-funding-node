@@ -3,7 +3,7 @@
 module.exports = function (properties, stateMachine, state) {
     const DataFetcher = require('dagcoin-fsm/dataFetcher');
     const fetcher = new DataFetcher(properties, stateMachine, state);
-    const dbManager = require(`${__dirname}/../../../databaseManager`).getInstance();
+    const dbManager = require(`dagcoin-core/databaseManager`).getInstance();
 
     if (!properties.address) {
         throw Error(`NO address IN DataFetcher proofInDb. PROPERTIES: ${properties}`);

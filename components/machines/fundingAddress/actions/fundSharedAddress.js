@@ -35,11 +35,11 @@ module.exports = function (properties, stateMachine, state) {
     };
 
     action.sendPayment = function () {
-        return accountManager.sendPayment(properties.sharedAddress, conf.BYTE_THRESHOLD_FOR_WARNING)
+        return accountManager.sendPayment(properties.sharedAddress, conf.FUNDING_AMOUNT_FOR_SHARED_ADDRESSES)
         .then(() => walletManager.readSingleAddress())
         .then((masterAddress) => accountManager.checkBytesForAddress(masterAddress))
         .then((bytesOnMasterAddress) => {
-          if (bytesOnMasterAddress < 5000) {
+          if (bytesOnMasterAddress < conf.BYTE_THRESHOLD_FOR_WARNING) {
             Raven.captureMessage('Funding node is low on bytes!', { level: 'warning' })
           }
         });

@@ -42,6 +42,7 @@ exports.bytesPerAddress = 10000;
 exports.maxEndUserCapacity = 10;
 
 exports.BYTE_THRESHOLD_FOR_WARNING = 10000000;
+exports.FUNDING_AMOUNT_FOR_SHARED_ADDRESSES = 5000;
 
 exports.passPhrase = '123';
 exports.dagcoinAsset = 'j5brqzPhQ0H2VNYi3i59PmlV15p54yAiSzacrQ2KqQQ=';

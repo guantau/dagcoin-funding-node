@@ -37,6 +37,9 @@ exports.totalBytes =  100000;
 exports.bytesPerAddress = 10000;
 exports.maxEndUserCapacity = 10;
 
+exports.BYTE_THRESHOLD_FOR_WARNING = 10000000;
+exports.FUNDING_AMOUNT_FOR_SHARED_ADDRESSES = 5000;
+
 exports.passPhrase = '123';
 exports.dagcoinAsset = 'B9dw3C3gMC+AODL/XqWjFh9jFe31jS08yf2C3zl8XGg=';
 
@@ -46,5 +49,7 @@ exports.MIN_PAYMENT_DELAY = 2 * 1000; // How many millis before starting a new p
 exports.MIN_RETRY_PAYMENT_DELAY = 60 * 1000; // How many millis before retrying a failed payment
 exports.MIN_STABLE_BYTES_ON_MAIN_BEFORE_FUNDING = 2000; //How many bytes stable on the main address before considering starting a payment
 exports.MAIN_ADDRESS_FUNDS_INSPECTION_PERIOD = 10 * 1000; //How often to inspect the database to update the information on the main address funds
+
+exports.DATABASE_MIGRATION_TOOL = "db-migrate"; // CAN BE native-queries OR db-migrate
 
 console.log('finished headless conf');

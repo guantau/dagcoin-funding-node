@@ -3,8 +3,8 @@
 function FundingExchangeProvider(pairingString, xPrivKey) {
     this.conf = require('byteballcore/conf.js');
     this.eventBus = require('byteballcore/event_bus');
-    this.dbManager = require('dagcoin-core/databaseManager').getInstance();
-    this.timedPromises = require('./promiseManager');
+    this.dbManager = require('dagcoin-core/lib/databaseManager').getInstance();
+    this.timedPromises = require('dagcoin-core/lib/promiseManager');
 
     this.exchangeFee = this.conf.exchangeFee;
     this.totalBytes = this.conf.totalBytes;
@@ -20,7 +20,7 @@ function FundingExchangeProvider(pairingString, xPrivKey) {
 
     this.proofManager = require('./proofManager').getInstance();
 
-    this.deviceManager = require('dagcoin-core/deviceManager').getInstance();
+    this.deviceManager = require('dagcoin-core/lib/deviceManager').getInstance();
 
     console.log(`pairingString: ${this.pairingString}`);
     console.log(`xPrivKey: ${this.xPrivKey}`);

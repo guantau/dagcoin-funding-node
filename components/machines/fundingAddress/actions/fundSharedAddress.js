@@ -3,9 +3,9 @@ const Raven = require('raven');
 module.exports = function (properties, stateMachine, state) {
     const Action = require('dagcoin-fsm/action');
     const action = new Action(properties, stateMachine, state);
-    const accountManager = require(`dagcoin-core/accountManager`).getInstance();
+    const accountManager = require('dagcoin-core/lib/accountManager').getInstance();
     const conf = require('byteballcore/conf');
-    const WalletManager = require('dagcoin-core/walletManager');
+    const WalletManager = require('dagcoin-core/lib/walletManager');
     const walletManager = new WalletManager();
 
     if (!properties.sharedAddress) {
@@ -22,7 +22,7 @@ module.exports = function (properties, stateMachine, state) {
                 return Promise.resolve();
             },
             (error) => {
-                require('dagcoin-core/exceptionManager').logError(error);
+                require('dagcoin-core/lib/exceptionManager').logError(error);
                 return new Promise((resolve) => {
                     console.log(`COULD NOT SEND 5000 bytes TO ${properties.sharedAddress}: ${error}. RETRYING IN ${conf.MIN_RETRY_PAYMENT_DELAY} ms`);
                     setTimeout(() => {

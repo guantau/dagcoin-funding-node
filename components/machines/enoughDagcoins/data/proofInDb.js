@@ -3,7 +3,7 @@
 module.exports = function (properties, stateMachine, state) {
     const DataFetcher = require('dagcoin-fsm/dataFetcher');
     const fetcher = new DataFetcher(properties, stateMachine, state);
-    const dbManager = require(`dagcoin-core/databaseManager`).getInstance();
+    const dbManager = require('dagcoin-core/lib/databaseManager').getInstance();
 
     if (!properties.address) {
         throw Error(`NO address IN DataFetcher proofInDb. PROPERTIES: ${properties}`);
@@ -24,7 +24,7 @@ module.exports = function (properties, stateMachine, state) {
                 const proofManager = require('../../../proofManager').getInstance();
 
                 proofManager.askForProofs(properties.deviceAddress, [properties.address]).catch((e) => {
-                    require('dagcoin-core/exceptionManager').logError(e);
+                    require('dagcoin-core/lib/exceptionManager').logError(e);
                 });
             }
 

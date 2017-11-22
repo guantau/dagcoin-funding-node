@@ -3,7 +3,7 @@
 module.exports = function (properties, stateMachine, state) {
     const Action = require('dagcoin-fsm/action');
     const action = new Action(properties, stateMachine, state);
-    const deviceManager = require('dagcoin-core/deviceManager').getInstance();
+    const deviceManager = require('dagcoin-core/lib/deviceManager').getInstance();
     const proofManager = require(`${__dirname}/../../../proofManager`).getInstance();
 
     if (!properties.deviceAddress) {

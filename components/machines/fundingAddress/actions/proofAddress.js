@@ -3,8 +3,8 @@
 module.exports = function (properties, stateMachine, state) {
     const Action = require('dagcoin-fsm/action');
     const action = new Action(properties, stateMachine, state);
-    const dbManager = require(`dagcoin-core/databaseManager`).getInstance();
-    const deviceManager = require('dagcoin-core/deviceManager').getInstance();
+    const dbManager = require('dagcoin-core/lib/databaseManager').getInstance();
+    const deviceManager = require('dagcoin-core/lib/deviceManager').getInstance();
     const proofManager = require(`${__dirname}/../../../proofManager`).getInstance();
 
     if (!properties.address) {

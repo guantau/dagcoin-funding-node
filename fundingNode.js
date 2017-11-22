@@ -5,12 +5,12 @@ const conf = require('byteballcore/conf.js');
 const eventBus = require('byteballcore/event_bus.js');
 eventBus.setMaxListeners(120);
 
-const accountManager = require('dagcoin-core/accountManager').getInstance();
-const dbManager = require('dagcoin-core/databaseManager').getInstance();
+const accountManager = require('dagcoin-core/lib/accountManager').getInstance();
+const dbManager = require('dagcoin-core/lib/databaseManager').getInstance();
 const proofManager = require('./components/proofManager').getInstance();
-const deviceManager = require('dagcoin-core/deviceManager').getInstance();
-const osManager = require('dagcoin-core/operatingSystemManager').getInstance();
-const exceptionManager = require('dagcoin-core/exceptionManager');
+const deviceManager = require('dagcoin-core/lib/deviceManager').getInstance();
+const osManager = require('dagcoin-core/lib/operatingSystemManager').getInstance();
+const exceptionManager = require('dagcoin-core/lib/exceptionManager');
 
 let fundingExchangeProvider = null;
 const followedAddress = {};

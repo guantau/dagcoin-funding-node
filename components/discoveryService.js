@@ -1,6 +1,6 @@
 'use strict';
 function DiscoveryService() {
-    this.deviceManager = require('dagcoin-core/deviceManager').getInstance();
+    this.deviceManager = require('dagcoin-core/lib/deviceManager').getInstance();
 
     this.conf = require('byteballcore/conf.js');
     this.discoveryServicePairingCode = this.conf.discoveryServicePairingCode;

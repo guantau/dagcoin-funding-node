@@ -39,7 +39,7 @@ exports.totalBytes =  100000;
 exports.bytesPerAddress = 10000;
 exports.maxEndUserCapacity = 10;
 
-exports.BYTE_THRESHOLD_FOR_WARNING = 10000000;
+exports.BYTE_THRESHOLD_FOR_WARNING = 500000;
 exports.FUNDING_AMOUNT_FOR_SHARED_ADDRESSES = 5000;
 
 exports.passPhrase = '123';

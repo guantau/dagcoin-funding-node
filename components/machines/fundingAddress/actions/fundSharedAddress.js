@@ -41,7 +41,11 @@ module.exports = function (properties, stateMachine, state) {
         .then((masterAddress) => accountManager.checkBytesForAddress(masterAddress))
         .then((bytesOnMasterAddress) => {
           if (bytesOnMasterAddress < conf.BYTE_THRESHOLD_FOR_WARNING) {
-            Raven.captureMessage('Funding node is low on bytes!', { level: 'warning' })
+              try {
+                  Raven.captureMessage('Funding node is low on bytes!', { level: 'warning' })
+              } catch (e) {
+                  require('dagcoin-core/lib/exceptionManager').logError(e);
+              }
           }
         });
     };

@@ -1,7 +1,7 @@
 "use strict"
 
 module.exports = function (properties, stateMachine, state) {
-    const DataFetcher = require('dagcoin-fsm/dataFetcher');
+    const DataFetcher = require('dagcoin-fsm/lib/dataFetcher');
     const fetcher = new DataFetcher(properties, stateMachine, state);
     const dbManager = require('dagcoin-core/lib/databaseManager').getInstance();
 

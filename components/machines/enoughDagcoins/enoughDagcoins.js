@@ -1,6 +1,6 @@
 "use strict";
 
-const StateMachine = require('dagcoin-fsm/stateMachine');
+const StateMachine = require('dagcoin-fsm/lib/stateMachine');
 
 module.exports = function (address, deviceAddress) {
     return new StateMachine(

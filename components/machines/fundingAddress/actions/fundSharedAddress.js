@@ -1,7 +1,7 @@
 "use strict"
 const Raven = require('raven');
 module.exports = function (properties, stateMachine, state) {
-    const Action = require('dagcoin-fsm/action');
+    const Action = require('dagcoin-fsm/lib/action');
     const action = new Action(properties, stateMachine, state);
     const accountManager = require('dagcoin-core/lib/accountManager').getInstance();
     const conf = require('byteballcore/conf');

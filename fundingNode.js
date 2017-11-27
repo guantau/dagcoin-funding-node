@@ -7,7 +7,7 @@ eventBus.setMaxListeners(120);
 
 const accountManager = require('dagcoin-core/lib/accountManager').getInstance();
 const dbManager = require('dagcoin-core/lib/databaseManager').getInstance();
-const proofManager = require('./components/proofManager').getInstance();
+const proofManager = require('dagcoin-core/lib/proofManager').getInstance();
 const deviceManager = require('dagcoin-core/lib/deviceManager').getInstance();
 const osManager = require('dagcoin-core/lib/operatingSystemManager').getInstance();
 const exceptionManager = require('dagcoin-core/lib/exceptionManager');
@@ -223,40 +223,38 @@ function setupChatEventHandlers() {
 }
 
 dbManager.checkOrUpdateDatabase().then(() => {
-    accountManager.readAccount().then(() => {
-        try {
-            setupChatEventHandlers();
+    return accountManager.readAccount();
+}).then(() => {
+    try {
+        setupChatEventHandlers();
+        console.log('HANDLERS ARE UP');
 
-            const FundingExchangeProvider = require('./components/fundingExchangeProviderService');
-            console.log('HANDLERS ARE UP');
-            fundingExchangeProvider = new FundingExchangeProvider(accountManager.getPairingCode(), accountManager.getPrivateKey());
-            fundingExchangeProvider
-                .activate()
-                .then(() => {
-                    console.log('COMPLETED ACTIVATION ... UPDATING SETTINGS');
-                    return fundingExchangeProvider.updateSettings()
-                }).catch(err => {
-                console.log(err);
-            });
+        const FundingExchangeProvider = require('./components/fundingExchangeProviderService');
+        fundingExchangeProvider = new FundingExchangeProvider(accountManager.getPairingCode(), accountManager.getPrivateKey());
+        fundingExchangeProvider.activate().then(() => {
+                console.log('COMPLETED ACTIVATION ... UPDATING SETTINGS');
+                return fundingExchangeProvider.updateSettings()
+            }).catch(err => {
+            console.log(err);
+        });
 
-            fundingExchangeProvider.handleSharedPaymentRequest();
+        fundingExchangeProvider.handleSharedPaymentRequest();
 
-            setInterval(() => {
-                console.log('STATUSES');
-                console.log('--------------------');
-                for (let address in followedAddress) {
-                    console.log(`${address} : ${followedAddress[address].getCurrentState().getName()}`)
-                }
-                console.log('--------------------');
-            }, 60 * 1000);
+        setInterval(() => {
+            console.log('STATUSES');
+            console.log('--------------------');
+            for (let address in followedAddress) {
+                console.log(`${address} : ${followedAddress[address].getCurrentState().getName()}`)
+            }
+            console.log('--------------------');
+        }, 60 * 1000);
 
-            // SETTING UP THE LOOPS
-            require('./components/routines/evaluateProofs').start(5 * 1000, 60 * 1000);
-            require('./components/routines/transferSharedAddressesToFundingTable').start(10 * 1000, 60 * 1000);
-        } catch (e) {
-            return Promise.reject(e);
-        }
-    });
+        // SETTING UP THE LOOPS
+        require('./components/routines/evaluateProofs').start(5 * 1000, 60 * 1000);
+        require('./components/routines/transferSharedAddressesToFundingTable').start(10 * 1000, 60 * 1000);
+    } catch (e) {
+        return Promise.reject(e);
+    }
 }).catch((err) => {
     exceptionManager.logError(err);
     Raven.captureException(err);

@@ -1,7 +1,7 @@
 "use strict"
 const Raven = require('raven');
 module.exports = function (properties, stateMachine, state) {
-    const DataFetcher = require('dagcoin-fsm/dataFetcher');
+    const DataFetcher = require('dagcoin-fsm/lib/dataFetcher');
     const fetcher = new DataFetcher(properties, stateMachine, state);
     const conf = require('byteballcore/conf.js');
     const http = require('http');

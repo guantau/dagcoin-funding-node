@@ -3,7 +3,7 @@
 
 const dbManager = require('dagcoin-core/lib/databaseManager').getInstance();
 const promiseManager = require('dagcoin-core/lib/promiseManager');
-const proofManager = require('../proofManager').getInstance();
+const proofManager = require('dagcoin-core/lib/proofManager').getInstance();
 
 const tag = 'evaluateProofs';
 

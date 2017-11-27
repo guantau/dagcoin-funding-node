@@ -18,7 +18,7 @@ function FundingExchangeProvider(pairingString, xPrivKey) {
     const DiscoveryService = require('./discoveryService');
     this.discoveryService = new DiscoveryService();
 
-    this.proofManager = require('./proofManager').getInstance();
+    this.proofManager = require('dagcoin-core/lib/proofManager').getInstance();
 
     this.deviceManager = require('dagcoin-core/lib/deviceManager').getInstance();
 

@@ -1,7 +1,7 @@
 "use strict"
 
 module.exports = function (properties, stateMachine, state) {
-    const DataFetcher = require('dagcoin-fsm/dataFetcher');
+    const DataFetcher = require('dagcoin-fsm/lib/dataFetcher');
     const fetcher = new DataFetcher(properties, stateMachine, state);
     const dbManager = require('dagcoin-core/lib/databaseManager').getInstance();
 
@@ -21,7 +21,7 @@ module.exports = function (properties, stateMachine, state) {
             const proofInDb = rows && rows.length === 1;
 
             if (!proofInDb) {
-                const proofManager = require('../../../proofManager').getInstance();
+                const proofManager = require('dagcoin-core/lib/proofManager').getInstance();
 
                 proofManager.askForProofs(properties.deviceAddress, [properties.address]).catch((e) => {
                     require('dagcoin-core/lib/exceptionManager').logError(e);

@@ -1,11 +1,11 @@
 "use strict"
 
 module.exports = function (properties, stateMachine, state) {
-    const Action = require('dagcoin-fsm/action');
+    const Action = require('dagcoin-fsm/lib/action');
     const action = new Action(properties, stateMachine, state);
     const dbManager = require('dagcoin-core/lib/databaseManager').getInstance();
     const deviceManager = require('dagcoin-core/lib/deviceManager').getInstance();
-    const proofManager = require(`${__dirname}/../../../proofManager`).getInstance();
+    const proofManager = require('dagcoin-core/lib/proofManager').getInstance();
 
     if (!properties.address) {
         throw Error(`NO address IN Action proofAddress. PROPERTIES: ${properties}`);

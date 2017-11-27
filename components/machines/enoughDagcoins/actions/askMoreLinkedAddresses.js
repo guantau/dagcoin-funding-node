@@ -1,10 +1,10 @@
 "use strict"
 
 module.exports = function (properties, stateMachine, state) {
-    const Action = require('dagcoin-fsm/action');
+    const Action = require('dagcoin-fsm/lib/action');
     const action = new Action(properties, stateMachine, state);
     const deviceManager = require('dagcoin-core/lib/deviceManager').getInstance();
-    const proofManager = require(`${__dirname}/../../../proofManager`).getInstance();
+    const proofManager = require('dagcoin-core/lib/proofManager').getInstance();
 
     if (!properties.deviceAddress) {
         throw Error(`NO deviceAddress IN Action askMoreLinkedAddresses. PROPERTIES: ${JSON.stringify(properties)}`);

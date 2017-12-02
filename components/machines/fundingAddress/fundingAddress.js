@@ -31,6 +31,7 @@ module.exports = function (addressObject) {
                 },
                 {
                     name: 'can-fuel-ready',
+                    evaluationPeriod: 60 * 1000,
                     fetchers: [
                         {
                             name: 'enoughDagcoins',

@@ -11,8 +11,7 @@ exports.bLight = true;
 exports.storage = 'sqlite';
 
 exports.deviceName = 'Dev-Funding-Node';
-exports.hub = 'testnetexplorer.dagcoin.org/wss/';
-exports.permanent_pairing_secret = 'L51iMkzcw8Lv';
+exports.hub = 'test-hub.dagcoin.org';
 exports.control_addresses = ['DEVICE ALLOWED TO CHAT'];
 exports.payout_address = 'WHERE THE MONEY CAN BE SENT TO';
 exports.KEYS_FILENAME = 'keys.json';
@@ -40,7 +39,6 @@ exports.maxEndUserCapacity = 10;
 exports.BYTE_THRESHOLD_FOR_WARNING = 10000000;
 exports.FUNDING_AMOUNT_FOR_SHARED_ADDRESSES = 5000;
 
-exports.passPhrase = '123';
 exports.dagcoinAsset = 'B9dw3C3gMC+AODL/XqWjFh9jFe31jS08yf2C3zl8XGg=';
 
 exports.DAGCOIN_MESSAGE_TIMEOUT = 30 * 1000;

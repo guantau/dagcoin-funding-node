@@ -11,23 +11,10 @@ const proofManager = require('dagcoin-core/lib/proofManager').getInstance();
 const deviceManager = require('dagcoin-core/lib/deviceManager').getInstance();
 const osManager = require('dagcoin-core/lib/operatingSystemManager').getInstance();
 const exceptionManager = require('dagcoin-core/lib/exceptionManager');
+const configurationManager = require('dagcoin-core/lib/confManager').getInstance();
 
 let fundingExchangeProvider = null;
 const followedAddress = {};
-
-if (conf.sentryUrl) {
-  Raven.config(conf.sentryUrl, {
-    sendTimeout: 5,
-    environment: conf.environment
-  }).install();
-}
-
-if (conf.permanent_pairing_secret) {
-    dbManager.query(
-        "INSERT " + dbManager.getIgnore() + " INTO pairing_secrets (pairing_secret, is_permanent, expiry_date) VALUES (?, 1, '2038-01-01')",
-        [conf.permanent_pairing_secret]
-    );
-}
 
 function handlePairing(from_address) {
     console.log(`PAIRED WITH ${from_address}`);
@@ -222,9 +209,32 @@ function setupChatEventHandlers() {
     });
 }
 
-dbManager.checkOrUpdateDatabase().then(() => {
-    return accountManager.readAccount();
-}).then(() => {
+configurationManager.addConfigSource({
+    name: 'system-env',
+    get: key => Promise.resolve(process.env[`DAGCOIN_FUNDING_${key}`])
+})
+.then(() => dbManager.checkOrUpdateDatabase())
+.then(() => configurationManager.getMultiple(['sentryUrl', 'environment', 'permanent_pairing_secret']))
+.then((config) => {
+    console.log(JSON.stringify(config));
+    if (config.sentryUrl) {
+        Raven.config(config.sentryUrl, {
+            sendTimeout: 5,
+            environment: config.environment
+        }).install();
+    }
+
+    if (config.permanent_pairing_secret) {
+        return dbManager.query(
+            "INSERT " + dbManager.getIgnore() + " INTO pairing_secrets (pairing_secret, is_permanent, expiry_date) VALUES (?, 1, '2038-01-01')",
+            [config.permanent_pairing_secret]
+        );
+    } else {
+        return Promise.resolve();
+    }
+})
+.then(() => accountManager.readAccount())
+.then(() => {
     try {
         setupChatEventHandlers();
         console.log('HANDLERS ARE UP');

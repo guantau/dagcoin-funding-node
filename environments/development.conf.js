@@ -48,6 +48,9 @@ exports.MIN_RETRY_PAYMENT_DELAY = 60 * 1000; // How many millis before retrying 
 exports.MIN_STABLE_BYTES_ON_MAIN_BEFORE_FUNDING = 2000; //How many bytes stable on the main address before considering starting a payment
 exports.MAIN_ADDRESS_FUNDS_INSPECTION_PERIOD = 10 * 1000; //How often to inspect the database to update the information on the main address funds
 
+exports.BYTEBALL_FAUCET = '0TFZHX7UTVQUWEPGLQDWEV5A4KLHFA5WB';
+exports.FAUCET_PAIRING_CODE = 'AxBxXDnPOzE/AxLHmidAjwLPFtQ6dK3k70zM0yKVeDzC@byteball.org/bb-test#0000';
+
 exports.DATABASE_MIGRATION_TOOL = "db-migrate"; // CAN BE native-queries OR db-migrate
 
 console.log('finished headless conf');

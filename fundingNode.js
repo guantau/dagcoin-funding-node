@@ -214,7 +214,7 @@ configurationManager.addConfigSource({
     get: key => Promise.resolve(process.env[`DAGCOIN_FUNDING_${key}`])
 })
 .then(() => dbManager.checkOrUpdateDatabase())
-.then(() => configurationManager.getMultiple(['sentryUrl', 'environment', 'permanent_pairing_secret']))
+.then(() => configurationManager.getMultiple(['sentryUrl', 'environment', 'PERMANENT_PAIRING_SECRET']))
 .then((config) => {
     console.log(JSON.stringify(config));
     if (config.sentryUrl) {
@@ -224,10 +224,10 @@ configurationManager.addConfigSource({
         }).install();
     }
 
-    if (config.permanent_pairing_secret) {
+    if (config.PERMANENT_PAIRING_SECRET) {
         return dbManager.query(
             "INSERT " + dbManager.getIgnore() + " INTO pairing_secrets (pairing_secret, is_permanent, expiry_date) VALUES (?, 1, '2038-01-01')",
-            [config.permanent_pairing_secret]
+            [config.PERMANENT_PAIRING_SECRET]
         );
     } else {
         return Promise.resolve();

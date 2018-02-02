@@ -79,7 +79,7 @@ FundingExchangeProvider.prototype.updateSettings = function () {
         maxEndUserCapacity: this.maxEndUserCapacity
     };
 
-    this.discoveryService.updateSettings(settings).then((response) => {
+    return this.discoveryService.updateSettings(settings).then((response) => {
         if (response) {
             console.log(`RECEIVED A RESPONSE FOR ${response.messageType}: ${JSON.stringify(response)}`);
             return Promise.resolve();

@@ -112,7 +112,13 @@ FundingExchangeProvider.prototype.keepAlive = function () {
 
     const self = this;
 
-    this.discoveryService.aliveAndWell().then(() => {
+    this.discoveryService.aliveAndWell().then((response) => {
+        console.log(`RESPONSE FOR ALIVE_AND_WELL MESSAGE: ${JSON.stringify(response)}`);
+        return Promise.resolve();
+    },(err) => {
+        console.log(`THE HEART BEAT PROCEDURE (ALIVE_AND_WELL MESSAGE) WAS UNSUCCESSFUL: ${JSON.stringify(err)}`);
+        return Promise.resolve();
+    }).then(() => {
         setTimeout(() => {
             self.keepAlive();
         }, 10 * 60 * 1000);
